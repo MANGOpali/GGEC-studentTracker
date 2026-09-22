@@ -1,7 +1,7 @@
 "use client";
 
 import { useQuery } from "@tanstack/react-query";
-import { Users, UserPlus, Calendar, FileText, Plane, Award, CheckCircle, TrendingUp, AlertCircle } from "lucide-react";
+import { Users, UserPlus, Calendar, FileText, Plane, Award, CheckCircle, TrendingUp, BookOpen, CalendarCheck } from "lucide-react";
 import KPICard from "@/components/dashboard/KPICard";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
@@ -33,7 +33,9 @@ export default function AdminDashboardClient() {
         </p>
       </div>
 
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+      {/* Study Abroad KPIs */}
+      <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">Study Abroad</p>
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
         {!stats ? (
           Array.from({ length: 8 }).map((_, i) => <Skeleton key={i} className="h-24 rounded-xl" />)
         ) : (
@@ -47,6 +49,23 @@ export default function AdminDashboardClient() {
             <KPICard title="Applications" value={stats.applications} icon={FileText} color="blue" />
             <KPICard title="Visa Process" value={stats.visaProcess} icon={Plane} color="purple" />
             <KPICard title="Enrolled" value={stats.enrolled} icon={Award} color="green" />
+          </>
+        )}
+      </div>
+
+      {/* Classes & Bookings KPIs */}
+      <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2 mt-6">Classes & Bookings</p>
+      <div className="grid grid-cols-2 lg:grid-cols-3 gap-4 mb-8">
+        {!stats ? (
+          Array.from({ length: 3 }).map((_, i) => <Skeleton key={i} className="h-24 rounded-xl" />)
+        ) : (
+          <>
+            <KPICard title="IELTS Class Leads" value={stats.ieltsLeads} icon={BookOpen} color="amber"
+              subtitle={stats.ieltsInClass > 0 ? `${stats.ieltsInClass} in class` : undefined} />
+            <KPICard title="PTE Class Leads" value={stats.pteLeads} icon={BookOpen} color="purple"
+              subtitle={stats.pteInClass > 0 ? `${stats.pteInClass} in class` : undefined} />
+            <KPICard title="Date Bookings" value={stats.dateBookingLeads} icon={CalendarCheck} color="teal"
+              subtitle={stats.bookingsConfirmed > 0 ? `${stats.bookingsConfirmed} confirmed` : undefined} />
           </>
         )}
       </div>

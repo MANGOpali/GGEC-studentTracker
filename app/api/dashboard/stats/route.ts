@@ -24,6 +24,8 @@ export async function GET(request: NextRequest) {
   const [
     totalLeads, todaysLeads, newLeads, followUpsDueToday, overdueFollowUps,
     counsellingCompleted, applications, visaProcess, visaGranted, enrolled,
+    ieltsLeads, pteLeads, dateBookingLeads,
+    ieltsInClass, pteInClass, bookingsConfirmed,
   ] = await Promise.all([
     prisma.lead.count({ where: { ...counsellorFilter, isArchived: false } }),
     prisma.lead.count({ where: { ...counsellorFilter, createdAt: { gte: todayStart, lte: todayEnd }, isArchived: false } }),
@@ -35,10 +37,18 @@ export async function GET(request: NextRequest) {
     prisma.lead.count({ where: { ...counsellorFilter, status: "VISA_PROCESS", isArchived: false } }),
     prisma.lead.count({ where: { ...counsellorFilter, status: "VISA_GRANTED", isArchived: false } }),
     prisma.lead.count({ where: { ...counsellorFilter, status: "ENROLLED", isArchived: false } }),
+    prisma.lead.count({ where: { ...counsellorFilter, leadType: "IELTS_CLASS", isArchived: false } }),
+    prisma.lead.count({ where: { ...counsellorFilter, leadType: "PTE_CLASS", isArchived: false } }),
+    prisma.lead.count({ where: { ...counsellorFilter, leadType: "DATE_BOOKING", isArchived: false } }),
+    prisma.lead.count({ where: { ...counsellorFilter, leadType: "IELTS_CLASS", status: "IN_CLASS", isArchived: false } }),
+    prisma.lead.count({ where: { ...counsellorFilter, leadType: "PTE_CLASS", status: "IN_CLASS", isArchived: false } }),
+    prisma.lead.count({ where: { ...counsellorFilter, leadType: "DATE_BOOKING", status: "CONFIRMED", isArchived: false } }),
   ]);
 
   return NextResponse.json({
     totalLeads, todaysLeads, newLeads, followUpsDueToday, overdueFollowUps,
     counsellingCompleted, applications, visaProcess, visaGranted, enrolled,
+    ieltsLeads, pteLeads, dateBookingLeads,
+    ieltsInClass, pteInClass, bookingsConfirmed,
   });
 }
