@@ -1,7 +1,6 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { loginSchema, LoginInput } from "@/lib/validations";
@@ -13,7 +12,6 @@ import { Loader2 } from "lucide-react";
 import Image from "next/image";
 
 export default function LoginPage() {
-  const router = useRouter();
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
@@ -38,9 +36,9 @@ export default function LoginPage() {
       }
 
       const role = json.user.role;
-      if (role === "ADMIN") router.push("/admin/dashboard");
-      else if (role === "COUNSELLOR") router.push("/counsellor/dashboard");
-      else router.push("/reception/dashboard");
+      if (role === "ADMIN") window.location.href = "/admin/dashboard";
+      else if (role === "COUNSELLOR") window.location.href = "/counsellor/dashboard";
+      else window.location.href = "/reception/dashboard";
     } catch {
       setError("Network error. Please try again.");
     } finally {

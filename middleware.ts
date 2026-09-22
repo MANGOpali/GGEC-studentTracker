@@ -34,6 +34,9 @@ export async function middleware(request: NextRequest) {
     return NextResponse.redirect(new URL("/unauthorized", request.url));
   }
 
+  // Prevent browser / CDN from caching protected pages so a stale
+  // response from a previous session is never replayed.
+  response.headers.set("Cache-Control", "no-store, no-cache, must-revalidate");
   return response;
 }
 
