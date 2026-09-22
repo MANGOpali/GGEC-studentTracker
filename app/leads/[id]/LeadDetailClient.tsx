@@ -4,7 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import Link from "next/link";
-import { ArrowLeft, Calendar, MessageSquare, CheckCircle, AlertCircle } from "lucide-react";
+import { ArrowLeft, Calendar, MessageSquare, CheckCircle, AlertCircle, Pencil } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -14,7 +14,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import StatusBadge from "@/components/leads/StatusBadge";
-import { formatDate, formatDateTime, formatRelative, STATUS_LABELS, LEAD_TYPE_LABELS, LEAD_TYPE_COLORS, STATUSES_BY_TYPE } from "@/lib/utils";
+import { formatDate, formatDateTime, formatRelative, STATUS_LABELS, LEAD_TYPE_LABELS, LEAD_TYPE_COLORS, STATUSES_BY_TYPE, EDUCATION_LEVELS } from "@/lib/utils";
 import { cn } from "@/lib/utils";
 import { useToast } from "@/components/ui/use-toast";
 
@@ -130,16 +130,62 @@ export default function LeadDetailClient({ id }: { id: string }) {
     staleTime: 30_000,
   });
 
+  const { data: refData } = useQuery({
+    queryKey: ["reference"],
+    queryFn: () => fetch("/api/reference").then((r) => r.json()),
+    staleTime: 10 * 60_000,
+  });
+
   const [showStatusDialog, setShowStatusDialog] = useState(false);
   const [showNoteDialog, setShowNoteDialog] = useState(false);
   const [showFollowUpDialog, setShowFollowUpDialog] = useState(false);
+  const [showEditDialog, setShowEditDialog] = useState(false);
   const [newStatus, setNewStatus] = useState("");
   const [note, setNote] = useState("");
   const [followUpDate, setFollowUpDate] = useState("");
   const [followUpNotes, setFollowUpNotes] = useState("");
   const [saving, setSaving] = useState(false);
+  const [editFields, setEditFields] = useState<Record<string, string>>({});
 
   if (isLoading || !lead) return <LeadDetailSkeleton />;
+
+  function openEdit() {
+    setEditFields({
+      studentName: lead!.studentName,
+      phone: lead!.phone,
+      email: lead!.email || "",
+      educationLevel: lead!.educationLevel,
+      countryId: lead!.country?.id || "",
+      course: lead!.course || "",
+      intakeId: lead!.intake?.id || "",
+      branchId: lead!.branch?.id || "",
+      assignedCounsellorId: lead!.assignedCounsellor?.id || "",
+      notes: lead!.notes || "",
+      bookingDate: lead!.bookingDate ? lead!.bookingDate.slice(0, 10) : "",
+    });
+    setShowEditDialog(true);
+  }
+
+  async function saveEdit() {
+    setSaving(true);
+    try {
+      const res = await fetch(`/api/leads/${lead!.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(editFields),
+      });
+      if (res.ok) {
+        await queryClient.invalidateQueries({ queryKey: ["lead", id] });
+        setShowEditDialog(false);
+        toast({ title: "Lead updated" });
+      } else {
+        const json = await res.json();
+        toast({ variant: "destructive", title: "Error", description: json.error || "Failed to update" });
+      }
+    } finally {
+      setSaving(false);
+    }
+  }
 
   async function changeStatus() {
     setSaving(true);
@@ -217,7 +263,10 @@ export default function LeadDetailClient({ id }: { id: string }) {
             <p className="text-sm text-gray-500 font-mono">{lead.leadId}</p>
           </div>
         </div>
-        <div className="flex gap-2 flex-shrink-0">
+        <div className="flex gap-2 flex-shrink-0 flex-wrap justify-end">
+          <Button variant="outline" size="sm" onClick={openEdit}>
+            <Pencil size={14} className="mr-1" />Edit
+          </Button>
           <Button variant="outline" size="sm" onClick={() => setShowFollowUpDialog(true)}>
             <Calendar size={14} className="mr-1" />Follow-up
           </Button>
@@ -373,6 +422,109 @@ export default function LeadDetailClient({ id }: { id: string }) {
           </Card>
         </div>
       </div>
+
+      {/* Edit Lead Dialog */}
+      <Dialog open={showEditDialog} onOpenChange={setShowEditDialog}>
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader><DialogTitle>Edit Lead</DialogTitle></DialogHeader>
+          <div className="space-y-4">
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-1.5">
+                <Label>Student Name</Label>
+                <Input value={editFields.studentName || ""} onChange={(e) => setEditFields((f) => ({ ...f, studentName: e.target.value }))} />
+              </div>
+              <div className="space-y-1.5">
+                <Label>Phone</Label>
+                <Input value={editFields.phone || ""} onChange={(e) => setEditFields((f) => ({ ...f, phone: e.target.value }))} />
+              </div>
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-1.5">
+                <Label>Email</Label>
+                <Input type="email" value={editFields.email || ""} onChange={(e) => setEditFields((f) => ({ ...f, email: e.target.value }))} />
+              </div>
+              <div className="space-y-1.5">
+                <Label>Education Level</Label>
+                <Select value={editFields.educationLevel || ""} onValueChange={(v) => setEditFields((f) => ({ ...f, educationLevel: v }))}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    {EDUCATION_LEVELS.map((l) => <SelectItem key={l} value={l}>{l}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+
+            {lead.leadType === "STUDY_ABROAD" && (
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-1.5">
+                  <Label>Interested Country</Label>
+                  <Select value={editFields.countryId || ""} onValueChange={(v) => setEditFields((f) => ({ ...f, countryId: v }))}>
+                    <SelectTrigger><SelectValue placeholder="Select country" /></SelectTrigger>
+                    <SelectContent>
+                      {refData?.countries?.map((c: { id: string; name: string }) => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-1.5">
+                  <Label>Preferred Course</Label>
+                  <Input value={editFields.course || ""} onChange={(e) => setEditFields((f) => ({ ...f, course: e.target.value }))} />
+                </div>
+              </div>
+            )}
+
+            {lead.leadType === "DATE_BOOKING" && (
+              <div className="space-y-1.5">
+                <Label>Test Booking Date</Label>
+                <Input type="date" value={editFields.bookingDate || ""} onChange={(e) => setEditFields((f) => ({ ...f, bookingDate: e.target.value }))} />
+              </div>
+            )}
+
+            <div className="grid grid-cols-2 gap-4">
+              {lead.leadType === "STUDY_ABROAD" && (
+                <div className="space-y-1.5">
+                  <Label>Intake</Label>
+                  <Select value={editFields.intakeId || ""} onValueChange={(v) => setEditFields((f) => ({ ...f, intakeId: v }))}>
+                    <SelectTrigger><SelectValue placeholder="Select intake" /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="">None</SelectItem>
+                      {refData?.intakes?.map((i: { id: string; name: string }) => <SelectItem key={i.id} value={i.id}>{i.name}</SelectItem>)}
+                    </SelectContent>
+                  </Select>
+                </div>
+              )}
+              <div className="space-y-1.5">
+                <Label>Branch</Label>
+                <Select value={editFields.branchId || ""} onValueChange={(v) => setEditFields((f) => ({ ...f, branchId: v }))}>
+                  <SelectTrigger><SelectValue placeholder="Select branch" /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="">None</SelectItem>
+                    {refData?.branches?.map((b: { id: string; name: string }) => <SelectItem key={b.id} value={b.id}>{b.name}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-1.5">
+                <Label>Assigned Counsellor</Label>
+                <Select value={editFields.assignedCounsellorId || ""} onValueChange={(v) => setEditFields((f) => ({ ...f, assignedCounsellorId: v }))}>
+                  <SelectTrigger><SelectValue placeholder="Unassigned" /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="">Unassigned</SelectItem>
+                    {refData?.counsellors?.map((c: { id: string; name: string }) => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+
+            <div className="space-y-1.5">
+              <Label>Notes</Label>
+              <Textarea rows={3} value={editFields.notes || ""} onChange={(e) => setEditFields((f) => ({ ...f, notes: e.target.value }))} placeholder="Any notes..." />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowEditDialog(false)}>Cancel</Button>
+            <Button onClick={saveEdit} disabled={saving}>Save Changes</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {/* Status Dialog */}
       <Dialog open={showStatusDialog} onOpenChange={setShowStatusDialog}>
