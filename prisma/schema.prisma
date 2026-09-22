@@ -1,0 +1,219 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum UserRole {
+  ADMIN
+  COUNSELLOR
+  RECEPTIONIST
+}
+
+enum LeadStatus {
+  NEW
+  CONTACTED
+  FOLLOW_UP
+  COUNSELLING_BOOKED
+  COUNSELLING_COMPLETED
+  INTERESTED
+  DOCUMENT_COLLECTION
+  APPLICATION_STARTED
+  APPLICATION_SUBMITTED
+  OFFER_RECEIVED
+  VISA_PROCESS
+  VISA_GRANTED
+  ENROLLED
+  NOT_INTERESTED
+  NOT_ELIGIBLE
+  NO_RESPONSE
+  FUTURE_INTAKE
+  CLOSED
+}
+
+enum ActivityType {
+  CREATE_LEAD
+  UPDATE_LEAD
+  ASSIGN_LEAD
+  CHANGE_STATUS
+  ADD_NOTE
+  SCHEDULE_FOLLOWUP
+  COMPLETE_COUNSELLING
+  ARCHIVE_LEAD
+  LOGIN
+}
+
+enum SyncStatus {
+  SYNCED
+  PENDING
+  FAILED
+}
+
+model Branch {
+  id        String   @id @default(cuid())
+  name      String   @unique
+  location  String?
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  users User[]
+  leads Lead[]
+}
+
+model User {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  password  String
+  name      String
+  role      UserRole
+  phone     String?
+  isActive  Boolean  @default(true)
+  branchId  String?
+  branch    Branch?  @relation(fields: [branchId], references: [id])
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  assignedLeads Lead[]         @relation("AssignedLeads")
+  createdLeads  Lead[]         @relation("CreatedLeads")
+  activities    LeadActivity[]
+  notifications Notification[]
+}
+
+model LeadSource {
+  id        String   @id @default(cuid())
+  name      String   @unique
+  isActive  Boolean  @default(true)
+  order     Int      @default(0)
+  createdAt DateTime @default(now())
+
+  leads Lead[]
+}
+
+model Country {
+  id        String   @id @default(cuid())
+  name      String   @unique
+  code      String?
+  isActive  Boolean  @default(true)
+  order     Int      @default(0)
+  createdAt DateTime @default(now())
+
+  leads Lead[]
+}
+
+model Intake {
+  id        String   @id @default(cuid())
+  name      String   @unique
+  year      Int?
+  month     Int?
+  isActive  Boolean  @default(true)
+  order     Int      @default(0)
+  createdAt DateTime @default(now())
+
+  leads Lead[]
+}
+
+model Lead {
+  id                   String     @id @default(cuid())
+  leadId               String     @unique
+  studentName          String
+  phone                String
+  email                String?
+  educationLevel       String
+  countryId            String
+  country              Country    @relation(fields: [countryId], references: [id])
+  course               String?
+  intakeId             String?
+  intake               Intake?    @relation(fields: [intakeId], references: [id])
+  sourceId             String
+  source               LeadSource @relation(fields: [sourceId], references: [id])
+  referredBy           String?
+  branchId             String?
+  branch               Branch?    @relation(fields: [branchId], references: [id])
+  assignedCounsellorId String?
+  assignedCounsellor   User?      @relation("AssignedLeads", fields: [assignedCounsellorId], references: [id])
+  status               LeadStatus @default(NEW)
+  academicInfo         Json?
+  englishTest          Json?
+  notes                String?
+  nextFollowUpAt       DateTime?
+  lastContactedAt      DateTime?
+  followUpNotes        String?
+  isArchived           Boolean    @default(false)
+
+  campaign    String?
+  campaignId  String?
+  utmSource   String?
+  utmMedium   String?
+  utmCampaign String?
+  utmContent  String?
+
+  createdById String
+  createdBy   User     @relation("CreatedLeads", fields: [createdById], references: [id])
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  activities LeadActivity[]
+  syncLogs   SyncLog[]
+
+  @@index([phone])
+  @@index([leadId])
+  @@index([studentName])
+  @@index([countryId])
+  @@index([status])
+  @@index([assignedCounsellorId])
+  @@index([createdAt])
+  @@index([isArchived])
+}
+
+model LeadActivity {
+  id        String       @id @default(cuid())
+  leadId    String?
+  lead      Lead?        @relation(fields: [leadId], references: [id])
+  userId    String
+  user      User         @relation(fields: [userId], references: [id])
+  action    ActivityType
+  metadata  Json?
+  createdAt DateTime     @default(now())
+
+  @@index([leadId])
+  @@index([userId])
+  @@index([createdAt])
+}
+
+model Notification {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+  title     String
+  message   String
+  isRead    Boolean  @default(false)
+  leadId    String?
+  createdAt DateTime @default(now())
+
+  @@index([userId, isRead])
+}
+
+model IntegrationSetting {
+  id        String   @id @default(cuid())
+  key       String   @unique
+  value     String?
+  metadata  Json?
+  updatedAt DateTime @updatedAt
+}
+
+model SyncLog {
+  id        String     @id @default(cuid())
+  leadId    String
+  lead      Lead       @relation(fields: [leadId], references: [id])
+  status    SyncStatus
+  errorMsg  String?
+  syncedAt  DateTime?
+  createdAt DateTime   @default(now())
+
+  @@index([leadId])
+  @@index([status])
+}

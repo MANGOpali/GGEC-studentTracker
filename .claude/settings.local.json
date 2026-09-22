@@ -1,0 +1,31 @@
+{
+  "permissions": {
+    "allow": [
+      "PowerShell(Get-ChildItem *)",
+      "PowerShell(Head *)",
+      "PowerShell(Get-ChildItem \"D:\\\\GGEC-StudentTracker\" -Recurse -Depth 4 | Where-Object { !$_.PSIsContainer } | Select-Object -First 120 | ForEach-Object { $_.FullName })",
+      "PowerShell(cd \"D:\\\\GGEC-StudentTracker\" ; Get-ChildItem -Recurse -File | Where-Object { $_.FullName -notmatch \"node_modules|\\\\.next\" } | Measure-Object | Select-Object -ExpandProperty Count)",
+      "PowerShell(cd \"D:\\\\GGEC-StudentTracker\" ; Get-ChildItem -Recurse -File | Where-Object { $_.FullName -notmatch \"node_modules|\\\\.next|\\\\.claude\" } | ForEach-Object { $_.FullName.Replace\\(\"D:\\\\GGEC-StudentTracker\\\\\", \"\"\\) } | Sort-Object)",
+      "Bash(npm install *)",
+      "Bash(npm list *)",
+      "Bash(npx tsc *)",
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\" http://localhost:3000)",
+      "Bash(Get-Process -Name \"node\" -ErrorAction SilentlyContinue)",
+      "Bash(Stop-Process -Force)",
+      "Bash(Start-Sleep -Seconds 2)",
+      "Bash(Write-Output \"done\")",
+      "PowerShell(Get-Process *)",
+      "Bash(curl -s http://localhost:3000/login -w \"\\\\nHTTP %{http_code}\\\\n\" -o /dev/null)",
+      "Bash(curl -s http://localhost:3000/api/auth/me -w \"\\\\nHTTP %{http_code}\\\\n\" -o /dev/null)",
+      "Bash(curl -s -w \"\\\\nTTFB: %{time_starttransfer}s | Total: %{time_total}s\\\\n\" -o /dev/null -b \"iron-session=dummy\" http://localhost:3000/api/reference)",
+      "Bash(curl -s -w \"\\\\nStats TTFB: %{time_starttransfer}s | Total: %{time_total}s\\\\n\" -o /dev/null -b \"iron-session=dummy\" http://localhost:3000/api/dashboard/stats)",
+      "Bash(curl -s -o /dev/null -w \"HTTP %{http_code} | TTFB: %{time_starttransfer}s\\\\n\" http://localhost:3000)",
+      "WebFetch(domain:localhost)",
+      "Bash(curl *)",
+      "Bash(npx prisma *)",
+      "Bash(node -e \"const p = require\\('@prisma/client/package.json'\\); console.log\\('prisma/client:', p.version\\)\")",
+      "Bash(npx vercel *)",
+      "Bash(vercel *)"
+    ]
+  }
+}
