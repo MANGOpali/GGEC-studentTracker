@@ -95,20 +95,25 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
     const body = await request.json();
     const parsed = updateLeadSchema.safeParse(body);
     if (!parsed.success) {
+      console.error("Lead update validation failed:", parsed.error.flatten());
       return NextResponse.json({ error: "Validation failed", details: parsed.error.flatten() }, { status: 400 });
     }
 
     const { status: newStatus, nextFollowUpAt, followUpNotes, lastContactedAt, ...rest } = parsed.data;
 
-    const updateData: Record<string, unknown> = { ...rest };
+    const { bookingDate, leadType, ...restFields } = rest;
+    const updateData: Record<string, unknown> = { ...restFields };
     if (newStatus) updateData.status = newStatus;
     if (nextFollowUpAt) updateData.nextFollowUpAt = new Date(nextFollowUpAt);
     if (followUpNotes !== undefined) updateData.followUpNotes = followUpNotes;
     if (lastContactedAt) updateData.lastContactedAt = new Date(lastContactedAt);
-    if (rest.email === "") updateData.email = null;
-    if (rest.intakeId === "") updateData.intakeId = null;
-    if (rest.branchId === "") updateData.branchId = null;
-    if (rest.assignedCounsellorId === "") updateData.assignedCounsellorId = null;
+    if (bookingDate) updateData.bookingDate = new Date(bookingDate);
+    if (bookingDate === "") updateData.bookingDate = null;
+    if (restFields.email === "") updateData.email = null;
+    if (restFields.countryId === "") updateData.countryId = null;
+    if (restFields.intakeId === "") updateData.intakeId = null;
+    if (restFields.branchId === "") updateData.branchId = null;
+    if (restFields.assignedCounsellorId === "") updateData.assignedCounsellorId = null;
 
     const updated = await prisma.lead.update({ where: { id: existing.id }, data: updateData });
 

@@ -41,11 +41,27 @@ export const createLeadSchema = z.object({
   followUpDate: z.string().optional(),
 });
 
-export const updateLeadSchema = createLeadSchema.partial().extend({
+export const updateLeadSchema = z.object({
+  leadType: z.enum(["STUDY_ABROAD", "IELTS_CLASS", "PTE_CLASS", "DATE_BOOKING"]).optional(),
+  studentName: z.string().min(2).optional(),
+  phone: z.string().min(7).max(20).optional(),
+  email: z.string().email().optional().or(z.literal("")),
+  educationLevel: z.string().optional(),
+  countryId: z.string().optional().or(z.literal("")),
+  sourceId: z.string().optional(),
+  bookingDate: z.string().optional().or(z.literal("")),
+  course: z.string().optional(),
+  intakeId: z.string().optional().or(z.literal("")),
+  referredBy: z.string().optional(),
+  branchId: z.string().optional().or(z.literal("")),
+  assignedCounsellorId: z.string().optional().or(z.literal("")),
+  notes: z.string().max(2000).optional(),
   status: z.string().optional(),
   nextFollowUpAt: z.string().optional(),
   followUpNotes: z.string().optional(),
   lastContactedAt: z.string().optional(),
+  academicInfo: z.record(z.string()).optional(),
+  englishTest: z.record(z.string()).optional(),
 });
 
 export const assignLeadSchema = z.object({
