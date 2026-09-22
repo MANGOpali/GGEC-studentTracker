@@ -4,6 +4,9 @@ import { SessionData, sessionOptions } from "@/lib/session";
 import { prisma } from "@/lib/db";
 import { updateLeadSchema } from "@/lib/validations";
 import { canEditLead } from "@/lib/permissions";
+import { createNotification, notifyAdmins } from "@/services/notificationService";
+
+const MILESTONE_STATUSES = new Set(["ENROLLED", "VISA_GRANTED", "APPLICATION_SUBMITTED", "OFFER_RECEIVED", "COMPLETED", "CONFIRMED"]);
 
 async function getSession(req: NextRequest) {
   const res = NextResponse.next();
@@ -110,7 +113,8 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
     const updated = await prisma.lead.update({ where: { id: existing.id }, data: updateData });
 
     // Log activity
-    const activityType = newStatus && newStatus !== existing.status ? "CHANGE_STATUS" : "UPDATE_LEAD";
+    const statusChanged = !!newStatus && newStatus !== existing.status;
+    const activityType = statusChanged ? "CHANGE_STATUS" : "UPDATE_LEAD";
     await prisma.leadActivity.create({
       data: {
         leadId: updated.id,
@@ -119,6 +123,47 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
         metadata: newStatus ? { from: existing.status, to: newStatus } : { fields: Object.keys(rest) },
       },
     });
+
+    // Notifications for status changes (fire-and-forget)
+    if (statusChanged && newStatus) {
+      const leadLabel = `${existing.leadId} (${existing.studentName})`;
+      const notifyPromises: Promise<unknown>[] = [];
+
+      // Notify admins on milestone statuses, or when a counsellor changes any status
+      if (MILESTONE_STATUSES.has(newStatus)) {
+        notifyPromises.push(
+          notifyAdmins(
+            `Lead ${newStatus.replace(/_/g, " ")}`,
+            `${leadLabel} is now ${newStatus.replace(/_/g, " ").toLowerCase()}.`,
+            existing.id,
+            session.userId,
+          )
+        );
+      } else if (session.role !== "ADMIN") {
+        notifyPromises.push(
+          notifyAdmins(
+            "Lead Status Updated",
+            `${session.name || "A user"} changed ${leadLabel} to ${newStatus.replace(/_/g, " ")}.`,
+            existing.id,
+            session.userId,
+          )
+        );
+      }
+
+      // Notify assigned counsellor when someone else changes status on their lead
+      if (existing.assignedCounsellorId && existing.assignedCounsellorId !== session.userId) {
+        notifyPromises.push(
+          createNotification({
+            userId: existing.assignedCounsellorId,
+            title: "Lead Status Changed",
+            message: `Status of ${leadLabel} was changed to ${newStatus.replace(/_/g, " ")}.`,
+            leadId: existing.id,
+          })
+        );
+      }
+
+      Promise.all(notifyPromises).catch(() => {});
+    }
 
     const lead = await buildLeadResponse(updated);
     return NextResponse.json({ lead });

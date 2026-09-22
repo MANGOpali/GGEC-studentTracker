@@ -4,6 +4,7 @@ import { appendLeadToSheet, ensureSheetHeaders } from "@/lib/google-sheets";
 import { CreateLeadInput } from "@/lib/validations";
 import { LeadStatus, LeadType } from "@prisma/client";
 import { format } from "date-fns";
+import { notifyAdmins } from "@/services/notificationService";
 
 export async function getNextLeadSequence(): Promise<number> {
   const latest = await prisma.lead.findFirst({
@@ -85,6 +86,17 @@ export async function createLead(data: CreateLeadInput, createdById: string) {
       metadata: { leadId: lead.leadId, studentName: lead.studentName },
     },
   });
+
+  // Notify admins when a non-admin creates a lead (fire-and-forget)
+  const creator = await prisma.user.findUnique({ where: { id: createdById }, select: { name: true, role: true } });
+  if (creator && creator.role !== "ADMIN") {
+    notifyAdmins(
+      "New Lead Created",
+      `${creator.name} added a new lead: ${lead.studentName} (${lead.leadId})`,
+      lead.id,
+      createdById,
+    ).catch(() => {});
+  }
 
   // Sync to Google Sheets (fire-and-forget)
   syncToSheets(lead).catch(() => {});
