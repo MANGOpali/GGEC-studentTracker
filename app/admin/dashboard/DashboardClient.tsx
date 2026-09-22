@@ -16,6 +16,13 @@ const fetchStats = () => fetch("/api/dashboard/stats").then((r) => r.json());
 const fetchSources = () => fetch("/api/reports/sources").then((r) => r.json());
 const fetchCountries = () => fetch("/api/reports/countries").then((r) => r.json());
 
+function getGreeting() {
+  const hour = new Date().getHours();
+  if (hour < 12) return "Good Morning";
+  if (hour < 17) return "Good Afternoon";
+  return "Good Evening";
+}
+
 export default function AdminDashboardClient() {
   const { data: stats } = useQuery({ queryKey: ["dashboard-stats"], queryFn: fetchStats, staleTime: 30_000 });
   const { data: sourcesData } = useQuery({ queryKey: ["reports-sources"], queryFn: fetchSources, staleTime: 60_000 });
@@ -26,9 +33,13 @@ export default function AdminDashboardClient() {
 
   return (
     <div>
+      {/* Greeting */}
       <div className="flex items-center justify-between mb-6">
-        <h1 className="text-2xl font-bold text-gray-900">Dashboard</h1>
-        <p className="text-sm text-gray-500">
+        <div>
+          <h1 className="text-2xl font-bold text-gray-900">{getGreeting()}! 👋</h1>
+          <p className="text-sm text-gray-500 mt-0.5">Here&apos;s what&apos;s happening with your leads today.</p>
+        </div>
+        <p className="text-sm text-gray-400 hidden sm:block">
           {new Date().toLocaleDateString("en-US", { weekday: "long", year: "numeric", month: "long", day: "numeric" })}
         </p>
       </div>
@@ -71,8 +82,8 @@ export default function AdminDashboardClient() {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <Card>
-          <CardHeader><CardTitle className="text-base">Leads by Source</CardTitle></CardHeader>
+        <Card className="shadow-sm border-gray-100 rounded-2xl">
+          <CardHeader><CardTitle className="text-base text-gray-800">Leads by Source</CardTitle></CardHeader>
           <CardContent>
             {sourceStats.length > 0 ? (
               <ResponsiveContainer width="100%" height={250}>
@@ -90,8 +101,8 @@ export default function AdminDashboardClient() {
           </CardContent>
         </Card>
 
-        <Card>
-          <CardHeader><CardTitle className="text-base">Leads by Country</CardTitle></CardHeader>
+        <Card className="shadow-sm border-gray-100 rounded-2xl">
+          <CardHeader><CardTitle className="text-base text-gray-800">Leads by Country</CardTitle></CardHeader>
           <CardContent>
             {countryStats.length > 0 ? (
               <ResponsiveContainer width="100%" height={250}>
