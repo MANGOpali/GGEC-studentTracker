@@ -7,6 +7,10 @@ import NextTopLoader from "nextjs-toploader";
 export const metadata: Metadata = {
   title: "Global Gate LeadFlow",
   description: "Lead Management System — Global Gate Education Consultancy",
+  icons: {
+    icon: "/logo.png",
+    apple: "/logo.png",
+  },
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

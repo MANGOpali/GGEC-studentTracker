@@ -6,6 +6,7 @@ import { usePathname, useRouter } from "next/navigation";
 import { LayoutDashboard, UserPlus, BookOpen, LogOut, Menu, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
+import Image from "next/image";
 
 const navItems = [
   { href: "/reception/dashboard", label: "Dashboard", icon: LayoutDashboard },
@@ -44,8 +45,9 @@ export default function ReceptionLayout({
       )}>
         <div className="flex items-center justify-between p-4 border-b border-blue-800">
           <div>
-            <h1 className="text-lg font-bold">Global Gate</h1>
-            <p className="text-xs text-blue-300">LeadFlow</p>
+            <div className="bg-white rounded-xl px-3 py-1.5">
+              <Image src="/logo.png" alt="Global Gate" width={140} height={46} className="object-contain" />
+            </div>
           </div>
           <button onClick={() => setSidebarOpen(false)} className="lg:hidden text-blue-300 hover:text-white">
             <X size={20} />

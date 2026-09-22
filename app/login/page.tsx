@@ -9,7 +9,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
-import { Loader2, GlobeIcon } from "lucide-react";
+import { Loader2 } from "lucide-react";
+import Image from "next/image";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -51,13 +52,12 @@ export default function LoginPage() {
     <div className="min-h-screen bg-gradient-to-br from-[#0E356B] to-[#1a4e9a] flex items-center justify-center p-4">
       <div className="w-full max-w-md">
         <div className="text-center mb-8">
-          <div className="flex items-center justify-center gap-3 mb-3">
-            <div className="w-12 h-12 bg-white rounded-full flex items-center justify-center">
-              <GlobeIcon size={26} className="text-[#0E356B]" />
+          <div className="flex items-center justify-center mb-4">
+            <div className="bg-white rounded-2xl px-6 py-3 shadow-lg">
+              <Image src="/logo.png" alt="Global Gate Educational Consultancy" width={240} height={80} className="object-contain" priority />
             </div>
           </div>
-          <h1 className="text-3xl font-bold text-white">Global Gate</h1>
-          <p className="text-blue-200 text-sm mt-1">LeadFlow — Education Consultancy CRM</p>
+          <p className="text-blue-200 text-sm mt-2">LeadFlow — CRM</p>
         </div>
 
         <Card className="shadow-2xl">
