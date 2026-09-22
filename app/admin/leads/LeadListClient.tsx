@@ -9,7 +9,8 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import StatusBadge from "@/components/leads/StatusBadge";
 import { Skeleton } from "@/components/ui/skeleton";
-import { formatDate, ALL_STATUSES, STATUS_LABELS } from "@/lib/utils";
+import { formatDate, ALL_STATUSES, STATUS_LABELS, LEAD_TYPE_LABELS, LEAD_TYPE_COLORS } from "@/lib/utils";
+import { cn } from "@/lib/utils";
 
 interface Lead {
   id: string;
@@ -18,9 +19,10 @@ interface Lead {
   phone: string;
   educationLevel: string;
   status: string;
+  leadType: string;
   createdAt: string;
   nextFollowUpAt: string | null;
-  country: { name: string };
+  country: { name: string } | null;
   source: { name: string };
   branch: { name: string } | null;
   assignedCounsellor: { name: string } | null;
@@ -28,6 +30,7 @@ interface Lead {
 
 interface Filters {
   status: string;
+  leadType: string;
   countryId: string;
   sourceId: string;
   counsellorId: string;
@@ -41,7 +44,7 @@ export default function LeadListClient() {
   const [pageSize, setPageSize] = useState(20);
   const [search, setSearch] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
-  const [filters, setFilters] = useState<Filters>({ status: "", countryId: "", sourceId: "", counsellorId: "", branchId: "" });
+  const [filters, setFilters] = useState<Filters>({ status: "", leadType: "", countryId: "", sourceId: "", counsellorId: "", branchId: "" });
   const [showFilters, setShowFilters] = useState(false);
 
   // Reference data: cached for 10 minutes — almost never changes
@@ -77,7 +80,7 @@ export default function LeadListClient() {
   }
 
   function clearFilters() {
-    setFilters({ status: "", countryId: "", sourceId: "", counsellorId: "", branchId: "" });
+    setFilters({ status: "", leadType: "", countryId: "", sourceId: "", counsellorId: "", branchId: "" });
     setSearch("");
   }
 
@@ -115,7 +118,14 @@ export default function LeadListClient() {
         </div>
 
         {showFilters && (
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3 pt-2 border-t">
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3 pt-2 border-t">
+            <Select value={filters.leadType} onValueChange={(v) => setFilters((f) => ({ ...f, leadType: v === "all" ? "" : v }))}>
+              <SelectTrigger className="h-9 text-sm"><SelectValue placeholder="All Types" /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Types</SelectItem>
+                {Object.entries(LEAD_TYPE_LABELS).map(([k, v]) => <SelectItem key={k} value={k}>{v}</SelectItem>)}
+              </SelectContent>
+            </Select>
             <Select value={filters.status} onValueChange={(v) => setFilters((f) => ({ ...f, status: v === "all" ? "" : v }))}>
               <SelectTrigger className="h-9 text-sm"><SelectValue placeholder="All Statuses" /></SelectTrigger>
               <SelectContent>
@@ -164,8 +174,8 @@ export default function LeadListClient() {
                 <th className="text-left px-4 py-3 font-medium text-gray-600 whitespace-nowrap">Lead ID</th>
                 <th className="text-left px-4 py-3 font-medium text-gray-600">Name</th>
                 <th className="text-left px-4 py-3 font-medium text-gray-600 hidden sm:table-cell">Phone</th>
-                <th className="text-left px-4 py-3 font-medium text-gray-600 hidden md:table-cell">Country</th>
-                <th className="text-left px-4 py-3 font-medium text-gray-600 hidden lg:table-cell">Source</th>
+                <th className="text-left px-4 py-3 font-medium text-gray-600 hidden md:table-cell">Type</th>
+                <th className="text-left px-4 py-3 font-medium text-gray-600 hidden lg:table-cell">Country / Test</th>
                 <th className="text-left px-4 py-3 font-medium text-gray-600">Status</th>
                 <th className="text-left px-4 py-3 font-medium text-gray-600 hidden xl:table-cell">Counsellor</th>
                 <th className="text-left px-4 py-3 font-medium text-gray-600 hidden lg:table-cell">Created</th>
@@ -183,7 +193,7 @@ export default function LeadListClient() {
                 ))
               ) : leads.length === 0 ? (
                 <tr>
-                  <td colSpan={9} className="text-center py-12 text-gray-400">
+                  <td colSpan={10} className="text-center py-12 text-gray-400">
                     No leads found{hasFilters ? " matching your filters" : ""}
                   </td>
                 </tr>
@@ -196,8 +206,14 @@ export default function LeadListClient() {
                       <div className="text-xs text-gray-500 sm:hidden">{lead.phone}</div>
                     </td>
                     <td className="px-4 py-3 hidden sm:table-cell text-gray-600">{lead.phone}</td>
-                    <td className="px-4 py-3 hidden md:table-cell text-gray-600">{lead.country.name}</td>
-                    <td className="px-4 py-3 hidden lg:table-cell text-gray-600">{lead.source.name}</td>
+                    <td className="px-4 py-3 hidden md:table-cell">
+                      <span className={cn("px-2 py-0.5 rounded-full text-xs font-medium", LEAD_TYPE_COLORS[lead.leadType] ?? "bg-gray-100 text-gray-700")}>
+                        {LEAD_TYPE_LABELS[lead.leadType] ?? lead.leadType}
+                      </span>
+                    </td>
+                    <td className="px-4 py-3 hidden lg:table-cell text-gray-600">
+                      {lead.country?.name ?? LEAD_TYPE_LABELS[lead.leadType] ?? "—"}
+                    </td>
                     <td className="px-4 py-3"><StatusBadge status={lead.status} /></td>
                     <td className="px-4 py-3 hidden xl:table-cell text-gray-600">
                       {lead.assignedCounsellor?.name ?? <span className="text-gray-400">—</span>}

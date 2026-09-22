@@ -6,12 +6,14 @@ export const loginSchema = z.object({
 });
 
 export const createLeadSchema = z.object({
+  leadType: z.enum(["STUDY_ABROAD", "IELTS_CLASS", "PTE_CLASS", "DATE_BOOKING"]).default("STUDY_ABROAD"),
   studentName: z.string().min(2, "Name must be at least 2 characters").max(100),
   phone: z.string().min(7, "Phone number too short").max(20).regex(/^[\d\s+\-()]+$/, "Invalid phone number"),
   email: z.string().email("Invalid email").optional().or(z.literal("")),
   educationLevel: z.string().min(1, "Education level is required"),
-  countryId: z.string().min(1, "Country is required"),
+  countryId: z.string().optional().or(z.literal("")),
   sourceId: z.string().min(1, "Lead source is required"),
+  bookingDate: z.string().optional(),
   course: z.string().optional(),
   intakeId: z.string().optional(),
   referredBy: z.string().optional(),

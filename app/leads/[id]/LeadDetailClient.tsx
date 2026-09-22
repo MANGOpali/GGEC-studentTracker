@@ -14,7 +14,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import StatusBadge from "@/components/leads/StatusBadge";
-import { formatDate, formatDateTime, formatRelative, ALL_STATUSES, STATUS_LABELS } from "@/lib/utils";
+import { formatDate, formatDateTime, formatRelative, STATUS_LABELS, LEAD_TYPE_LABELS, LEAD_TYPE_COLORS, STATUSES_BY_TYPE } from "@/lib/utils";
+import { cn } from "@/lib/utils";
 import { useToast } from "@/components/ui/use-toast";
 
 interface Lead {
@@ -25,6 +26,8 @@ interface Lead {
   email: string | null;
   educationLevel: string;
   status: string;
+  leadType: string;
+  bookingDate: string | null;
   course: string | null;
   notes: string | null;
   followUpNotes: string | null;
@@ -35,7 +38,7 @@ interface Lead {
   updatedAt: string;
   academicInfo: Record<string, string> | null;
   englishTest: Record<string, string> | null;
-  country: { id: string; name: string };
+  country: { id: string; name: string } | null;
   source: { id: string; name: string };
   intake: { id: string; name: string } | null;
   branch: { id: string; name: string } | null;
@@ -204,9 +207,12 @@ export default function LeadDetailClient({ id }: { id: string }) {
             <ArrowLeft size={20} />
           </Link>
           <div>
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 flex-wrap">
               <h1 className="text-xl font-bold text-gray-900">{lead.studentName}</h1>
               <StatusBadge status={lead.status} />
+              <span className={cn("px-2 py-0.5 rounded-full text-xs font-medium", LEAD_TYPE_COLORS[lead.leadType] ?? "bg-gray-100 text-gray-700")}>
+                {LEAD_TYPE_LABELS[lead.leadType] ?? lead.leadType}
+              </span>
             </div>
             <p className="text-sm text-gray-500 font-mono">{lead.leadId}</p>
           </div>
@@ -244,13 +250,30 @@ export default function LeadDetailClient({ id }: { id: string }) {
             </CardContent>
           </Card>
 
-          {/* Study Preferences */}
+          {/* Study / Class / Booking Details */}
           <Card>
-            <CardHeader><CardTitle className="text-base">Study Preferences</CardTitle></CardHeader>
+            <CardHeader>
+              <CardTitle className="text-base">
+                {lead.leadType === "STUDY_ABROAD" ? "Study Preferences" :
+                 lead.leadType === "DATE_BOOKING" ? "Booking Details" : "Class Details"}
+              </CardTitle>
+            </CardHeader>
             <CardContent className="grid grid-cols-2 gap-4 text-sm">
-              <div><span className="text-gray-500">Country</span><p className="font-medium mt-0.5">{lead.country.name}</p></div>
-              <div><span className="text-gray-500">Course</span><p className="font-medium mt-0.5">{lead.course || "—"}</p></div>
-              <div><span className="text-gray-500">Intake</span><p className="font-medium mt-0.5">{lead.intake?.name || "—"}</p></div>
+              {lead.country && (
+                <div><span className="text-gray-500">Country</span><p className="font-medium mt-0.5">{lead.country.name}</p></div>
+              )}
+              {lead.leadType === "DATE_BOOKING" && (
+                <div><span className="text-gray-500">Booking Date</span><p className="font-medium mt-0.5">{formatDate(lead.bookingDate)}</p></div>
+              )}
+              {(lead.leadType === "IELTS_CLASS" || lead.leadType === "PTE_CLASS") && (
+                <div><span className="text-gray-500">Test Type</span><p className="font-medium mt-0.5">{LEAD_TYPE_LABELS[lead.leadType]}</p></div>
+              )}
+              {lead.leadType === "STUDY_ABROAD" && (
+                <>
+                  <div><span className="text-gray-500">Course</span><p className="font-medium mt-0.5">{lead.course || "—"}</p></div>
+                  <div><span className="text-gray-500">Intake</span><p className="font-medium mt-0.5">{lead.intake?.name || "—"}</p></div>
+                </>
+              )}
               <div><span className="text-gray-500">Education Level</span><p className="font-medium mt-0.5">{lead.educationLevel}</p></div>
             </CardContent>
           </Card>
@@ -358,7 +381,9 @@ export default function LeadDetailClient({ id }: { id: string }) {
           <Select value={newStatus} onValueChange={setNewStatus}>
             <SelectTrigger><SelectValue /></SelectTrigger>
             <SelectContent>
-              {ALL_STATUSES.map((s) => <SelectItem key={s} value={s}>{STATUS_LABELS[s]}</SelectItem>)}
+              {(STATUSES_BY_TYPE[lead.leadType] ?? STATUSES_BY_TYPE.STUDY_ABROAD).map((s) => (
+                <SelectItem key={s} value={s}>{STATUS_LABELS[s] ?? s}</SelectItem>
+              ))}
             </SelectContent>
           </Select>
           <DialogFooter>

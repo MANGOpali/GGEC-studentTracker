@@ -25,11 +25,13 @@ export async function GET(request: NextRequest) {
   ]);
   const countryMap = new Map(countries.map((c) => [c.id, c.name]));
 
-  const stats = groups.map((g) => ({
-    countryId: g.countryId,
-    countryName: countryMap.get(g.countryId) || "Unknown",
-    total: g._count.id,
-  }));
+  const stats = groups
+    .filter((g) => g.countryId !== null)
+    .map((g) => ({
+      countryId: g.countryId,
+      countryName: countryMap.get(g.countryId!) || "Unknown",
+      total: g._count.id,
+    }));
 
   return NextResponse.json({ stats });
 }

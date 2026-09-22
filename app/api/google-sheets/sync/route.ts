@@ -41,7 +41,7 @@ export async function POST(request: NextRequest) {
       phone: lead.phone,
       email: lead.email || "",
       educationLevel: lead.educationLevel,
-      country: lead.country.name,
+      country: lead.country?.name || "",
       course: lead.course || "",
       intake: lead.intake?.name || "",
       source: lead.source.name,

@@ -62,7 +62,7 @@ export async function GET(request: NextRequest) {
 
   const rows = leads.map((l) => [
     l.leadId, l.studentName, l.phone, l.email || "",
-    l.educationLevel, l.country.name, l.course || "",
+    l.educationLevel, l.country?.name || "", l.course || "",
     l.intake?.name || "", l.source.name, l.status,
     l.assignedCounsellor?.name || "", l.branch?.name || "",
     l.createdBy.name, format(l.createdAt, "dd MMM yyyy HH:mm"),

@@ -90,3 +90,63 @@ export const ACTIVE_STATUSES = [
   "APPLICATION_STARTED", "APPLICATION_SUBMITTED", "OFFER_RECEIVED",
   "VISA_PROCESS", "VISA_GRANTED",
 ];
+
+// New status labels
+Object.assign(STATUS_LABELS, {
+  DEMO_SCHEDULED: "Demo Scheduled",
+  DEMO_ATTENDED: "Demo Attended",
+  IN_CLASS: "In Class",
+  COMPLETED: "Completed",
+  DROPPED: "Dropped",
+  CONFIRMED: "Confirmed",
+  RESCHEDULED: "Rescheduled",
+  NO_SHOW: "No Show",
+});
+
+Object.assign(STATUS_COLORS, {
+  DEMO_SCHEDULED: "bg-violet-100 text-violet-800",
+  DEMO_ATTENDED: "bg-indigo-100 text-indigo-800",
+  IN_CLASS: "bg-teal-100 text-teal-800",
+  COMPLETED: "bg-green-100 text-green-800",
+  DROPPED: "bg-red-100 text-red-800",
+  CONFIRMED: "bg-emerald-100 text-emerald-800",
+  RESCHEDULED: "bg-yellow-100 text-yellow-800",
+  NO_SHOW: "bg-gray-200 text-gray-700",
+});
+
+export const LEAD_TYPE_LABELS: Record<string, string> = {
+  STUDY_ABROAD: "Study Abroad",
+  IELTS_CLASS: "IELTS Class",
+  PTE_CLASS: "PTE Class",
+  DATE_BOOKING: "Date Booking",
+};
+
+export const LEAD_TYPE_COLORS: Record<string, string> = {
+  STUDY_ABROAD: "bg-blue-100 text-blue-800",
+  IELTS_CLASS: "bg-orange-100 text-orange-800",
+  PTE_CLASS: "bg-purple-100 text-purple-800",
+  DATE_BOOKING: "bg-pink-100 text-pink-800",
+};
+
+export const STATUSES_BY_TYPE: Record<string, string[]> = {
+  STUDY_ABROAD: [
+    "NEW", "CONTACTED", "FOLLOW_UP", "COUNSELLING_BOOKED", "COUNSELLING_COMPLETED",
+    "INTERESTED", "DOCUMENT_COLLECTION", "APPLICATION_STARTED", "APPLICATION_SUBMITTED",
+    "OFFER_RECEIVED", "VISA_PROCESS", "VISA_GRANTED", "ENROLLED",
+    "NOT_INTERESTED", "NOT_ELIGIBLE", "NO_RESPONSE", "FUTURE_INTAKE", "CLOSED",
+  ],
+  IELTS_CLASS: [
+    "NEW", "CONTACTED", "FOLLOW_UP",
+    "DEMO_SCHEDULED", "DEMO_ATTENDED", "ENROLLED", "IN_CLASS", "COMPLETED", "DROPPED",
+    "NOT_INTERESTED", "NO_RESPONSE", "CLOSED",
+  ],
+  PTE_CLASS: [
+    "NEW", "CONTACTED", "FOLLOW_UP",
+    "DEMO_SCHEDULED", "DEMO_ATTENDED", "ENROLLED", "IN_CLASS", "COMPLETED", "DROPPED",
+    "NOT_INTERESTED", "NO_RESPONSE", "CLOSED",
+  ],
+  DATE_BOOKING: [
+    "NEW", "CONTACTED", "FOLLOW_UP",
+    "CONFIRMED", "RESCHEDULED", "NO_SHOW", "COMPLETED", "CLOSED",
+  ],
+};

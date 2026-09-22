@@ -13,6 +13,13 @@ enum UserRole {
   RECEPTIONIST
 }
 
+enum LeadType {
+  STUDY_ABROAD
+  IELTS_CLASS
+  PTE_CLASS
+  DATE_BOOKING
+}
+
 enum LeadStatus {
   NEW
   CONTACTED
@@ -32,6 +39,16 @@ enum LeadStatus {
   NO_RESPONSE
   FUTURE_INTAKE
   CLOSED
+  // IELTS / PTE class statuses
+  DEMO_SCHEDULED
+  DEMO_ATTENDED
+  IN_CLASS
+  COMPLETED
+  DROPPED
+  // Date booking statuses
+  CONFIRMED
+  RESCHEDULED
+  NO_SHOW
 }
 
 enum ActivityType {
@@ -123,8 +140,10 @@ model Lead {
   phone                String
   email                String?
   educationLevel       String
-  countryId            String
-  country              Country    @relation(fields: [countryId], references: [id])
+  leadType             LeadType   @default(STUDY_ABROAD)
+  bookingDate          DateTime?
+  countryId            String?
+  country              Country?   @relation(fields: [countryId], references: [id])
   course               String?
   intakeId             String?
   intake               Intake?    @relation(fields: [intakeId], references: [id])
@@ -164,6 +183,7 @@ model Lead {
   @@index([studentName])
   @@index([countryId])
   @@index([status])
+  @@index([leadType])
   @@index([assignedCounsellorId])
   @@index([createdAt])
   @@index([isArchived])

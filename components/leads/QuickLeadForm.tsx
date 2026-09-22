@@ -16,7 +16,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ChevronDown, ChevronUp, Loader2, CheckCircle, AlertTriangle } from "lucide-react";
 import Link from "next/link";
-import { EDUCATION_LEVELS } from "@/lib/utils";
+import { EDUCATION_LEVELS, LEAD_TYPE_LABELS, STATUSES_BY_TYPE } from "@/lib/utils";
 
 interface RefData {
   sources: Array<{ id: string; name: string }>;
@@ -65,6 +65,7 @@ export default function QuickLeadForm() {
   const { register, handleSubmit, setValue, watch, reset, formState: { errors } } = useForm<CreateLeadInput>({
     resolver: zodResolver(createLeadSchema),
     defaultValues: {
+      leadType: "STUDY_ABROAD",
       campaign: searchParams.get("campaign") || undefined,
       campaignId: searchParams.get("campaignId") || undefined,
       utmSource: searchParams.get("utmSource") || searchParams.get("utm_source") || undefined,
@@ -74,6 +75,11 @@ export default function QuickLeadForm() {
     },
   });
 
+
+  const leadType = watch("leadType") || "STUDY_ABROAD";
+  const isClassType = leadType === "IELTS_CLASS" || leadType === "PTE_CLASS";
+  const isDateBooking = leadType === "DATE_BOOKING";
+  const isStudyAbroad = leadType === "STUDY_ABROAD";
 
   // Pre-fill source from URL param
   useEffect(() => {
@@ -162,6 +168,21 @@ export default function QuickLeadForm() {
             <CardTitle className="text-base">Required Information</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
+            {/* Lead Type */}
+            <div className="space-y-1.5">
+              <Label>Lead Type *</Label>
+              <Select value={leadType} onValueChange={(v) => setValue("leadType", v as CreateLeadInput["leadType"])}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Select type" />
+                </SelectTrigger>
+                <SelectContent>
+                  {Object.entries(LEAD_TYPE_LABELS).map(([k, v]) => (
+                    <SelectItem key={k} value={k}>{v}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="space-y-1.5">
                 <Label htmlFor="studentName">Student Name *</Label>
@@ -198,18 +219,32 @@ export default function QuickLeadForm() {
                 </Select>
                 {errors.educationLevel && <p className="text-xs text-red-500">{errors.educationLevel.message}</p>}
               </div>
-              <div className="space-y-1.5">
-                <Label>Interested Country *</Label>
-                <Select onValueChange={(v) => setValue("countryId", v)}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select country" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {refData?.countries.map((c) => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}
-                  </SelectContent>
-                </Select>
-                {errors.countryId && <p className="text-xs text-red-500">{errors.countryId.message}</p>}
-              </div>
+
+              {isStudyAbroad ? (
+                <div className="space-y-1.5">
+                  <Label>Interested Country *</Label>
+                  <Select onValueChange={(v) => setValue("countryId", v)}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select country" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {refData?.countries.map((c) => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}
+                    </SelectContent>
+                  </Select>
+                </div>
+              ) : isDateBooking ? (
+                <div className="space-y-1.5">
+                  <Label htmlFor="bookingDate">Test Booking Date</Label>
+                  <Input id="bookingDate" type="date" {...register("bookingDate")} />
+                </div>
+              ) : (
+                <div className="space-y-1.5">
+                  <Label>Test Type</Label>
+                  <div className="h-10 flex items-center px-3 rounded-md border bg-gray-50 text-sm text-gray-600">
+                    {LEAD_TYPE_LABELS[leadType]}
+                  </div>
+                </div>
+              )}
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -225,17 +260,19 @@ export default function QuickLeadForm() {
                 </Select>
                 {errors.sourceId && <p className="text-xs text-red-500">{errors.sourceId.message}</p>}
               </div>
-              <div className="space-y-1.5">
-                <Label>Intake</Label>
-                <Select onValueChange={(v) => setValue("intakeId", v)}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select intake" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {refData?.intakes.map((i) => <SelectItem key={i.id} value={i.id}>{i.name}</SelectItem>)}
-                  </SelectContent>
-                </Select>
-              </div>
+              {isStudyAbroad && (
+                <div className="space-y-1.5">
+                  <Label>Intake</Label>
+                  <Select onValueChange={(v) => setValue("intakeId", v)}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select intake" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {refData?.intakes.map((i) => <SelectItem key={i.id} value={i.id}>{i.name}</SelectItem>)}
+                    </SelectContent>
+                  </Select>
+                </div>
+              )}
             </div>
           </CardContent>
         </Card>

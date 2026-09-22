@@ -26,6 +26,7 @@ export async function GET(request: NextRequest) {
   const counsellorId = searchParams.get("counsellorId") || "";
   const branchId = searchParams.get("branchId") || "";
   const intakeId = searchParams.get("intakeId") || "";
+  const leadType = searchParams.get("leadType") || "";
   const dateFrom = searchParams.get("dateFrom") || "";
   const dateTo = searchParams.get("dateTo") || "";
   const phone = searchParams.get("phone") || "";
@@ -48,6 +49,7 @@ export async function GET(request: NextRequest) {
     ];
   }
   if (status) where.status = status as never;
+  if (leadType) where.leadType = leadType as never;
   if (countryId) where.countryId = countryId;
   if (sourceId) where.sourceId = sourceId;
   if (counsellorId && session.role === "ADMIN") where.assignedCounsellorId = counsellorId;
@@ -66,7 +68,8 @@ export async function GET(request: NextRequest) {
       where,
       select: {
         id: true, leadId: true, studentName: true, phone: true,
-        educationLevel: true, status: true, createdAt: true, nextFollowUpAt: true,
+        educationLevel: true, status: true, leadType: true, bookingDate: true,
+        createdAt: true, nextFollowUpAt: true,
         countryId: true, sourceId: true, intakeId: true, branchId: true,
         assignedCounsellorId: true, createdById: true,
       },
@@ -77,7 +80,7 @@ export async function GET(request: NextRequest) {
   ]);
 
   // Round 2: fetch all referenced entities in parallel (6 queries at once)
-  const countryIds = [...new Set(rows.map((r) => r.countryId))];
+  const countryIds = [...new Set(rows.map((r) => r.countryId).filter(Boolean))] as string[];
   const sourceIds = [...new Set(rows.map((r) => r.sourceId))];
   const intakeIds = [...new Set(rows.map((r) => r.intakeId).filter(Boolean))] as string[];
   const branchIds = [...new Set(rows.map((r) => r.branchId).filter(Boolean))] as string[];
@@ -85,7 +88,7 @@ export async function GET(request: NextRequest) {
   const createdByIds = [...new Set(rows.map((r) => r.createdById))];
 
   const [countries, sources, intakes, branches, counsellors, creators] = await Promise.all([
-    prisma.country.findMany({ where: { id: { in: countryIds } }, select: { id: true, name: true } }),
+    countryIds.length ? prisma.country.findMany({ where: { id: { in: countryIds } }, select: { id: true, name: true } }) : Promise.resolve([]),
     prisma.leadSource.findMany({ where: { id: { in: sourceIds } }, select: { id: true, name: true } }),
     intakeIds.length ? prisma.intake.findMany({ where: { id: { in: intakeIds } }, select: { id: true, name: true } }) : Promise.resolve([]),
     branchIds.length ? prisma.branch.findMany({ where: { id: { in: branchIds } }, select: { id: true, name: true } }) : Promise.resolve([]),
@@ -103,7 +106,7 @@ export async function GET(request: NextRequest) {
 
   const leads = rows.map((r) => ({
     ...r,
-    country: cMap.get(r.countryId) ?? { id: r.countryId, name: "—" },
+    country: r.countryId ? (cMap.get(r.countryId) ?? { id: r.countryId, name: "—" }) : null,
     source: sMap.get(r.sourceId) ?? { id: r.sourceId, name: "—" },
     intake: r.intakeId ? (iMap.get(r.intakeId) ?? null) : null,
     branch: r.branchId ? (bMap.get(r.branchId) ?? null) : null,

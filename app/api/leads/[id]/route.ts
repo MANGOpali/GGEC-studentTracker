@@ -29,7 +29,7 @@ async function buildLeadResponse(rawLead: Awaited<ReturnType<typeof prisma.lead.
 
   // Round 1 parallel: all direct relation + activities queries at once
   const [country, source, intake, branch, assignedCounsellor, createdBy, activities] = await Promise.all([
-    prisma.country.findUnique({ where: { id: rawLead.countryId }, select: { id: true, name: true } }),
+    rawLead.countryId ? prisma.country.findUnique({ where: { id: rawLead.countryId }, select: { id: true, name: true } }) : Promise.resolve(null),
     prisma.leadSource.findUnique({ where: { id: rawLead.sourceId }, select: { id: true, name: true } }),
     rawLead.intakeId ? prisma.intake.findUnique({ where: { id: rawLead.intakeId }, select: { id: true, name: true } }) : Promise.resolve(null),
     rawLead.branchId ? prisma.branch.findUnique({ where: { id: rawLead.branchId }, select: { id: true, name: true } }) : Promise.resolve(null),
@@ -52,7 +52,7 @@ async function buildLeadResponse(rawLead: Awaited<ReturnType<typeof prisma.lead.
 
   return {
     ...rawLead,
-    country: country ?? { id: rawLead.countryId, name: "—" },
+    country: rawLead.countryId ? (country ?? { id: rawLead.countryId, name: "—" }) : null,
     source: source ?? { id: rawLead.sourceId, name: "—" },
     intake,
     branch,

@@ -2,7 +2,7 @@ import { prisma } from "@/lib/db";
 import { generateLeadId } from "@/lib/utils";
 import { appendLeadToSheet, ensureSheetHeaders } from "@/lib/google-sheets";
 import { CreateLeadInput } from "@/lib/validations";
-import { LeadStatus } from "@prisma/client";
+import { LeadStatus, LeadType } from "@prisma/client";
 import { format } from "date-fns";
 
 export async function getNextLeadSequence(): Promise<number> {
@@ -40,12 +40,14 @@ export async function createLead(data: CreateLeadInput, createdById: string) {
   const lead = await prisma.lead.create({
     data: {
       leadId,
+      leadType: (data.leadType as LeadType) || LeadType.STUDY_ABROAD,
       studentName: data.studentName,
       phone: data.phone,
       email: data.email || null,
       educationLevel: data.educationLevel,
-      countryId: data.countryId,
+      countryId: data.countryId || null,
       sourceId: data.sourceId,
+      bookingDate: data.bookingDate ? new Date(data.bookingDate) : null,
       course: data.course || null,
       intakeId: data.intakeId || null,
       referredBy: data.referredBy || null,
@@ -97,7 +99,7 @@ async function syncToSheets(lead: {
   phone: string;
   email: string | null;
   educationLevel: string;
-  country: { name: string };
+  country: { name: string } | null;
   course: string | null;
   intake: { name: string } | null;
   source: { name: string };
@@ -116,7 +118,7 @@ async function syncToSheets(lead: {
     phone: lead.phone,
     email: lead.email || "",
     educationLevel: lead.educationLevel,
-    country: lead.country.name,
+    country: lead.country?.name || "",
     course: lead.course || "",
     intake: lead.intake?.name || "",
     source: lead.source.name,
