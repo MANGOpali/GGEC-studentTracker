@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { useQuery } from "@tanstack/react-query";
-import { Search, Filter, Download, ChevronLeft, ChevronRight, Eye } from "lucide-react";
+import { Search, Filter, Download, ChevronLeft, ChevronRight, ArrowRight, X, SlidersHorizontal } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -39,6 +39,13 @@ interface Filters {
 
 const fetchRef = () => fetch("/api/reference").then((r) => r.json());
 
+const TYPE_DOT: Record<string, string> = {
+  STUDY_ABROAD: "bg-blue-500",
+  IELTS_CLASS:  "bg-violet-500",
+  PTE_CLASS:    "bg-orange-500",
+  DATE_BOOKING: "bg-teal-500",
+};
+
 export default function LeadListClient() {
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(20);
@@ -47,7 +54,6 @@ export default function LeadListClient() {
   const [filters, setFilters] = useState<Filters>({ status: "", leadType: "", countryId: "", sourceId: "", counsellorId: "", branchId: "" });
   const [showFilters, setShowFilters] = useState(false);
 
-  // Reference data: cached for 10 minutes — almost never changes
   const { data: refData } = useQuery({ queryKey: ["reference"], queryFn: fetchRef, staleTime: 10 * 60_000 });
 
   useEffect(() => {
@@ -65,7 +71,7 @@ export default function LeadListClient() {
     queryKey: ["leads", page, pageSize, debouncedSearch, filters],
     queryFn: () => fetch(`/api/leads?${leadsParams}`).then((r) => r.json()),
     staleTime: 30_000,
-    placeholderData: (prev) => prev, // keep old data while fetching next page
+    placeholderData: (prev) => prev,
   });
 
   const leads: Lead[] = leadsData?.data ?? [];
@@ -84,146 +90,172 @@ export default function LeadListClient() {
     setSearch("");
   }
 
-  const hasFilters = Object.values(filters).some(Boolean) || search;
+  const activeFilterCount = Object.values(filters).filter(Boolean).length;
+  const hasFilters = activeFilterCount > 0 || search;
 
   return (
-    <div>
-      <div className="flex items-center justify-between mb-6">
+    <div className="space-y-4">
+      {/* Header */}
+      <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold text-gray-900">All Leads</h1>
-          <p className="text-sm text-gray-500 mt-0.5">{total.toLocaleString()} total leads</p>
+          <p className="text-sm text-gray-500 mt-0.5">
+            {isLoading ? "Loading..." : <>{total.toLocaleString()} leads total</>}
+          </p>
         </div>
         <div className="flex gap-2">
-          <Button variant="outline" size="sm" onClick={handleExport}>
-            <Download size={16} className="mr-1" />Export CSV
+          <Button variant="outline" size="sm" onClick={handleExport} className="hidden sm:flex">
+            <Download size={14} />Export CSV
           </Button>
-          <Link href="/leads/new"><Button size="sm">+ New Lead</Button></Link>
+          <Link href="/leads/new">
+            <Button size="sm">+ New Lead</Button>
+          </Link>
         </div>
       </div>
 
-      {/* Search & Filters */}
-      <div className="bg-white rounded-xl border p-4 mb-4 space-y-3">
+      {/* Search + Filter Bar */}
+      <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-4 space-y-3">
         <div className="flex gap-2">
           <div className="relative flex-1">
-            <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
-            <Input placeholder="Search by name, phone, email, or Lead ID..." value={search}
-              onChange={(e) => setSearch(e.target.value)} className="pl-9" />
+            <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+            <Input
+              placeholder="Search name, phone, email, Lead ID…"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              className="pl-9 bg-gray-50 border-gray-200 focus:bg-white"
+            />
+            {search && (
+              <button onClick={() => setSearch("")} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600">
+                <X size={14} />
+              </button>
+            )}
           </div>
-          <Button variant="outline" size="sm" onClick={() => setShowFilters(!showFilters)}
-            className={showFilters ? "bg-blue-50 border-blue-200 text-blue-700" : ""}>
-            <Filter size={16} className="mr-1" />Filters
-            {hasFilters && <span className="ml-1 w-2 h-2 rounded-full bg-blue-500 inline-block" />}
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setShowFilters(!showFilters)}
+            className={cn("gap-1.5 shrink-0", showFilters && "bg-blue-50 border-blue-300 text-blue-700")}
+          >
+            <SlidersHorizontal size={14} />
+            Filters
+            {activeFilterCount > 0 && (
+              <span className="w-4 h-4 rounded-full bg-blue-500 text-white text-[10px] flex items-center justify-center font-semibold">
+                {activeFilterCount}
+              </span>
+            )}
           </Button>
-          {hasFilters && <Button variant="ghost" size="sm" onClick={clearFilters}>Clear</Button>}
+          {hasFilters && (
+            <Button variant="ghost" size="sm" onClick={clearFilters} className="text-gray-500 shrink-0">
+              <X size={14} />Clear
+            </Button>
+          )}
         </div>
 
         {showFilters && (
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3 pt-2 border-t">
-            <Select value={filters.leadType} onValueChange={(v) => setFilters((f) => ({ ...f, leadType: v === "all" ? "" : v }))}>
-              <SelectTrigger className="h-9 text-sm"><SelectValue placeholder="All Types" /></SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Types</SelectItem>
-                {Object.entries(LEAD_TYPE_LABELS).map(([k, v]) => <SelectItem key={k} value={k}>{v}</SelectItem>)}
-              </SelectContent>
-            </Select>
-            <Select value={filters.status} onValueChange={(v) => setFilters((f) => ({ ...f, status: v === "all" ? "" : v }))}>
-              <SelectTrigger className="h-9 text-sm"><SelectValue placeholder="All Statuses" /></SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Statuses</SelectItem>
-                {ALL_STATUSES.map((s) => <SelectItem key={s} value={s}>{STATUS_LABELS[s]}</SelectItem>)}
-              </SelectContent>
-            </Select>
-            <Select value={filters.countryId} onValueChange={(v) => setFilters((f) => ({ ...f, countryId: v === "all" ? "" : v }))}>
-              <SelectTrigger className="h-9 text-sm"><SelectValue placeholder="All Countries" /></SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Countries</SelectItem>
-                {refData?.countries?.map((c: { id: string; name: string }) => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}
-              </SelectContent>
-            </Select>
-            <Select value={filters.sourceId} onValueChange={(v) => setFilters((f) => ({ ...f, sourceId: v === "all" ? "" : v }))}>
-              <SelectTrigger className="h-9 text-sm"><SelectValue placeholder="All Sources" /></SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Sources</SelectItem>
-                {refData?.sources?.map((s: { id: string; name: string }) => <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>)}
-              </SelectContent>
-            </Select>
-            <Select value={filters.counsellorId} onValueChange={(v) => setFilters((f) => ({ ...f, counsellorId: v === "all" ? "" : v }))}>
-              <SelectTrigger className="h-9 text-sm"><SelectValue placeholder="All Counsellors" /></SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Counsellors</SelectItem>
-                {refData?.counsellors?.map((c: { id: string; name: string }) => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}
-              </SelectContent>
-            </Select>
-            <Select value={filters.branchId} onValueChange={(v) => setFilters((f) => ({ ...f, branchId: v === "all" ? "" : v }))}>
-              <SelectTrigger className="h-9 text-sm"><SelectValue placeholder="All Branches" /></SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Branches</SelectItem>
-                {refData?.branches?.map((b: { id: string; name: string }) => <SelectItem key={b.id} value={b.id}>{b.name}</SelectItem>)}
-              </SelectContent>
-            </Select>
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-2 pt-3 border-t border-gray-100">
+            {[
+              { key: "leadType", placeholder: "All Types", options: Object.entries(LEAD_TYPE_LABELS).map(([k, v]) => ({ value: k, label: v })) },
+              { key: "status", placeholder: "All Statuses", options: ALL_STATUSES.map((s) => ({ value: s, label: STATUS_LABELS[s] })) },
+              { key: "countryId", placeholder: "All Countries", options: (refData?.countries ?? []).map((c: { id: string; name: string }) => ({ value: c.id, label: c.name })) },
+              { key: "sourceId", placeholder: "All Sources", options: (refData?.sources ?? []).map((s: { id: string; name: string }) => ({ value: s.id, label: s.name })) },
+              { key: "counsellorId", placeholder: "All Counsellors", options: (refData?.counsellors ?? []).map((c: { id: string; name: string }) => ({ value: c.id, label: c.name })) },
+              { key: "branchId", placeholder: "All Branches", options: (refData?.branches ?? []).map((b: { id: string; name: string }) => ({ value: b.id, label: b.name })) },
+            ].map(({ key, placeholder, options }) => (
+              <Select
+                key={key}
+                value={filters[key as keyof Filters]}
+                onValueChange={(v) => setFilters((f) => ({ ...f, [key]: v === "all" ? "" : v }))}
+              >
+                <SelectTrigger className="h-8 text-xs bg-gray-50">
+                  <SelectValue placeholder={placeholder} />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">{placeholder}</SelectItem>
+                  {options.map((o: { value: string; label: string }) => <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>)}
+                </SelectContent>
+              </Select>
+            ))}
           </div>
         )}
       </div>
 
       {/* Table */}
-      <div className="bg-white rounded-xl border overflow-hidden">
+      <div className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
-              <tr className="bg-gray-50 border-b">
-                <th className="text-left px-4 py-3 font-medium text-gray-600 whitespace-nowrap">Lead ID</th>
-                <th className="text-left px-4 py-3 font-medium text-gray-600">Name</th>
-                <th className="text-left px-4 py-3 font-medium text-gray-600 hidden sm:table-cell">Phone</th>
-                <th className="text-left px-4 py-3 font-medium text-gray-600 hidden md:table-cell">Type</th>
-                <th className="text-left px-4 py-3 font-medium text-gray-600 hidden lg:table-cell">Country / Test</th>
-                <th className="text-left px-4 py-3 font-medium text-gray-600">Status</th>
-                <th className="text-left px-4 py-3 font-medium text-gray-600 hidden xl:table-cell">Counsellor</th>
-                <th className="text-left px-4 py-3 font-medium text-gray-600 hidden lg:table-cell">Created</th>
-                <th className="text-left px-4 py-3 font-medium text-gray-600">Actions</th>
+              <tr className="border-b border-gray-100">
+                <th className="text-left px-5 py-3.5 text-xs font-semibold text-gray-400 uppercase tracking-wider whitespace-nowrap">Lead ID</th>
+                <th className="text-left px-5 py-3.5 text-xs font-semibold text-gray-400 uppercase tracking-wider">Student</th>
+                <th className="text-left px-5 py-3.5 text-xs font-semibold text-gray-400 uppercase tracking-wider hidden sm:table-cell">Phone</th>
+                <th className="text-left px-5 py-3.5 text-xs font-semibold text-gray-400 uppercase tracking-wider hidden md:table-cell">Type</th>
+                <th className="text-left px-5 py-3.5 text-xs font-semibold text-gray-400 uppercase tracking-wider hidden lg:table-cell">Country / Test</th>
+                <th className="text-left px-5 py-3.5 text-xs font-semibold text-gray-400 uppercase tracking-wider">Status</th>
+                <th className="text-left px-5 py-3.5 text-xs font-semibold text-gray-400 uppercase tracking-wider hidden xl:table-cell">Counsellor</th>
+                <th className="text-left px-5 py-3.5 text-xs font-semibold text-gray-400 uppercase tracking-wider hidden lg:table-cell">Added</th>
+                <th className="px-5 py-3.5"></th>
               </tr>
             </thead>
-            <tbody>
+            <tbody className="divide-y divide-gray-50">
               {isLoading ? (
-                Array.from({ length: 5 }).map((_, i) => (
-                  <tr key={i} className="border-b">
+                Array.from({ length: 6 }).map((_, i) => (
+                  <tr key={i}>
                     {Array.from({ length: 9 }).map((__, j) => (
-                      <td key={j} className="px-4 py-3"><Skeleton className="h-4 w-full" /></td>
+                      <td key={j} className="px-5 py-3.5"><Skeleton className="h-4 w-full" /></td>
                     ))}
                   </tr>
                 ))
               ) : leads.length === 0 ? (
                 <tr>
-                  <td colSpan={10} className="text-center py-12 text-gray-400">
-                    No leads found{hasFilters ? " matching your filters" : ""}
+                  <td colSpan={9} className="text-center py-16 text-gray-400">
+                    <Search size={32} className="mx-auto mb-3 opacity-30" />
+                    <p className="font-medium">No leads found</p>
+                    {hasFilters && <p className="text-xs mt-1">Try adjusting your filters</p>}
                   </td>
                 </tr>
               ) : (
                 leads.map((lead) => (
-                  <tr key={lead.id} className="border-b hover:bg-gray-50 transition-colors">
-                    <td className="px-4 py-3 font-mono text-xs text-[#0E356B] whitespace-nowrap">{lead.leadId}</td>
-                    <td className="px-4 py-3">
-                      <div className="font-medium text-gray-900">{lead.studentName}</div>
-                      <div className="text-xs text-gray-500 sm:hidden">{lead.phone}</div>
+                  <tr key={lead.id} className="hover:bg-blue-50/40 transition-colors group">
+                    <td className="px-5 py-3.5">
+                      <div className="flex items-center gap-2">
+                        <span className={cn("w-1.5 h-1.5 rounded-full flex-shrink-0", TYPE_DOT[lead.leadType] ?? "bg-gray-400")} />
+                        <span className="font-mono text-xs font-semibold text-blue-600 bg-blue-50 px-2 py-0.5 rounded-md whitespace-nowrap">
+                          {lead.leadId}
+                        </span>
+                      </div>
                     </td>
-                    <td className="px-4 py-3 hidden sm:table-cell text-gray-600">{lead.phone}</td>
-                    <td className="px-4 py-3 hidden md:table-cell">
-                      <span className={cn("px-2 py-0.5 rounded-full text-xs font-medium", LEAD_TYPE_COLORS[lead.leadType] ?? "bg-gray-100 text-gray-700")}>
+                    <td className="px-5 py-3.5">
+                      <div className="font-semibold text-gray-900">{lead.studentName}</div>
+                      <div className="text-xs text-gray-400 sm:hidden mt-0.5">{lead.phone}</div>
+                    </td>
+                    <td className="px-5 py-3.5 hidden sm:table-cell text-gray-600 text-sm">{lead.phone}</td>
+                    <td className="px-5 py-3.5 hidden md:table-cell">
+                      <span className={cn("px-2.5 py-1 rounded-full text-xs font-medium", LEAD_TYPE_COLORS[lead.leadType] ?? "bg-gray-100 text-gray-600")}>
                         {LEAD_TYPE_LABELS[lead.leadType] ?? lead.leadType}
                       </span>
                     </td>
-                    <td className="px-4 py-3 hidden lg:table-cell text-gray-600">
+                    <td className="px-5 py-3.5 hidden lg:table-cell text-gray-600 text-sm">
                       {lead.country?.name ?? LEAD_TYPE_LABELS[lead.leadType] ?? "—"}
                     </td>
-                    <td className="px-4 py-3"><StatusBadge status={lead.status} /></td>
-                    <td className="px-4 py-3 hidden xl:table-cell text-gray-600">
-                      {lead.assignedCounsellor?.name ?? <span className="text-gray-400">—</span>}
+                    <td className="px-5 py-3.5"><StatusBadge status={lead.status} /></td>
+                    <td className="px-5 py-3.5 hidden xl:table-cell">
+                      {lead.assignedCounsellor ? (
+                        <div className="flex items-center gap-2">
+                          <div className="w-6 h-6 rounded-full bg-blue-100 text-blue-700 text-xs font-bold flex items-center justify-center flex-shrink-0">
+                            {lead.assignedCounsellor.name.charAt(0).toUpperCase()}
+                          </div>
+                          <span className="text-sm text-gray-700">{lead.assignedCounsellor.name}</span>
+                        </div>
+                      ) : (
+                        <span className="text-gray-400 text-sm">—</span>
+                      )}
                     </td>
-                    <td className="px-4 py-3 hidden lg:table-cell text-gray-500 whitespace-nowrap">{formatDate(lead.createdAt)}</td>
-                    <td className="px-4 py-3">
+                    <td className="px-5 py-3.5 hidden lg:table-cell text-gray-400 text-xs whitespace-nowrap">{formatDate(lead.createdAt)}</td>
+                    <td className="px-5 py-3.5">
                       <Link href={`/leads/${lead.id}`}>
-                        <Button variant="ghost" size="sm" className="h-8 px-2">
-                          <Eye size={14} className="mr-1" />View
-                        </Button>
+                        <button className="flex items-center gap-1 text-xs font-medium text-gray-400 group-hover:text-blue-600 transition-colors">
+                          View <ArrowRight size={13} className="group-hover:translate-x-0.5 transition-transform" />
+                        </button>
                       </Link>
                     </td>
                   </tr>
@@ -234,24 +266,26 @@ export default function LeadListClient() {
         </div>
 
         {/* Pagination */}
-        <div className="flex items-center justify-between px-4 py-3 border-t bg-gray-50">
-          <div className="flex items-center gap-2 text-sm text-gray-600">
+        <div className="flex items-center justify-between px-5 py-3 border-t border-gray-100 bg-gray-50/50">
+          <div className="flex items-center gap-2 text-sm text-gray-500">
             <span>Show</span>
             <Select value={String(pageSize)} onValueChange={(v) => { setPageSize(Number(v)); setPage(1); }}>
-              <SelectTrigger className="h-8 w-20"><SelectValue /></SelectTrigger>
+              <SelectTrigger className="h-7 w-16 text-xs"><SelectValue /></SelectTrigger>
               <SelectContent>
                 {[20, 50, 100].map((n) => <SelectItem key={n} value={String(n)}>{n}</SelectItem>)}
               </SelectContent>
             </Select>
-            <span>per page · {total === 0 ? 0 : ((page - 1) * pageSize + 1).toLocaleString()}–{Math.min(page * pageSize, total).toLocaleString()} of {total.toLocaleString()}</span>
+            <span className="hidden sm:inline">
+              {total === 0 ? "0" : `${((page - 1) * pageSize + 1).toLocaleString()}–${Math.min(page * pageSize, total).toLocaleString()}`} of {total.toLocaleString()}
+            </span>
           </div>
           <div className="flex items-center gap-1">
-            <Button variant="outline" size="sm" disabled={page === 1} onClick={() => setPage((p) => p - 1)}>
-              <ChevronLeft size={16} />
+            <Button variant="outline" size="sm" className="h-8 w-8 p-0" disabled={page === 1} onClick={() => setPage((p) => p - 1)}>
+              <ChevronLeft size={15} />
             </Button>
-            <span className="text-sm px-2">{page} / {totalPages}</span>
-            <Button variant="outline" size="sm" disabled={page >= totalPages} onClick={() => setPage((p) => p + 1)}>
-              <ChevronRight size={16} />
+            <span className="text-sm text-gray-600 px-2 tabular-nums">{page} / {totalPages}</span>
+            <Button variant="outline" size="sm" className="h-8 w-8 p-0" disabled={page >= totalPages} onClick={() => setPage((p) => p + 1)}>
+              <ChevronRight size={15} />
             </Button>
           </div>
         </div>
