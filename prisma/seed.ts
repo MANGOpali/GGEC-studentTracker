@@ -31,7 +31,7 @@ async function main() {
   const sources = [
     "Instagram", "Facebook", "WhatsApp", "TikTok", "Website",
     "Referral", "Walk-in", "Phone Call", "Education Fair",
-    "Google", "Existing Student", "Friend/Family", "Other",
+    "Google", "Existing Student", "Friend/Family", "From Ads", "Other",
   ];
   const createdSources = await Promise.all(
     sources.map((name, i) =>

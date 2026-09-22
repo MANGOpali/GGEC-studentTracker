@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { useQuery } from "@tanstack/react-query";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useSearchParams } from "next/navigation";
 import { createLeadSchema, CreateLeadInput } from "@/lib/validations";
 import { useToast } from "@/components/ui/use-toast";
 import { Button } from "@/components/ui/button";
@@ -13,7 +13,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
-import { ChevronDown, ChevronUp, Loader2, CheckCircle, AlertTriangle, Globe, BookOpen, Calendar, GraduationCap, User, Phone, Mail, BookMarked, Building2, UserCheck, FileText, Sparkles } from "lucide-react";
+import { ChevronDown, ChevronUp, Loader2, CheckCircle, AlertTriangle, Globe, BookOpen, Calendar, BookMarked } from "lucide-react";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
 import { EDUCATION_LEVELS, LEAD_TYPE_LABELS } from "@/lib/utils";
@@ -45,52 +45,12 @@ interface CreatedLead {
   assignedCounsellor: { name: string } | null;
 }
 
-const LEAD_TYPE_CONFIG = {
-  STUDY_ABROAD: {
-    icon: Globe,
-    label: "Study Abroad",
-    gradient: "from-blue-500 to-blue-700",
-    lightBg: "bg-blue-50",
-    border: "border-blue-500",
-    text: "text-blue-700",
-    badge: "bg-blue-100 text-blue-700",
-    ring: "ring-blue-500",
-    description: "International education counselling",
-  },
-  IELTS_CLASS: {
-    icon: BookOpen,
-    label: "IELTS Class",
-    gradient: "from-purple-500 to-purple-700",
-    lightBg: "bg-purple-50",
-    border: "border-purple-500",
-    text: "text-purple-700",
-    badge: "bg-purple-100 text-purple-700",
-    ring: "ring-purple-500",
-    description: "IELTS preparation coaching",
-  },
-  PTE_CLASS: {
-    icon: BookMarked,
-    label: "PTE Class",
-    gradient: "from-amber-500 to-orange-600",
-    lightBg: "bg-amber-50",
-    border: "border-amber-500",
-    text: "text-amber-700",
-    badge: "bg-amber-100 text-amber-700",
-    ring: "ring-amber-500",
-    description: "PTE Academic preparation",
-  },
-  DATE_BOOKING: {
-    icon: Calendar,
-    label: "Date Booking",
-    gradient: "from-teal-500 to-teal-700",
-    lightBg: "bg-teal-50",
-    border: "border-teal-500",
-    text: "text-teal-700",
-    badge: "bg-teal-100 text-teal-700",
-    ring: "ring-teal-500",
-    description: "Test date reservation",
-  },
-};
+const LEAD_TYPES = [
+  { value: "STUDY_ABROAD", label: "Study Abroad", icon: Globe, color: "text-blue-600", activeBg: "bg-blue-600", activeText: "text-white", hoverBg: "hover:bg-blue-50" },
+  { value: "IELTS_CLASS",  label: "IELTS Class",  icon: BookOpen, color: "text-violet-600", activeBg: "bg-violet-600", activeText: "text-white", hoverBg: "hover:bg-violet-50" },
+  { value: "PTE_CLASS",    label: "PTE Class",    icon: BookMarked, color: "text-orange-600", activeBg: "bg-orange-500", activeText: "text-white", hoverBg: "hover:bg-orange-50" },
+  { value: "DATE_BOOKING", label: "Date Booking", icon: Calendar, color: "text-teal-600", activeBg: "bg-teal-600", activeText: "text-white", hoverBg: "hover:bg-teal-50" },
+];
 
 export default function QuickLeadForm() {
   const searchParams = useSearchParams();
@@ -122,8 +82,8 @@ export default function QuickLeadForm() {
     },
   });
 
-  const leadType = (watch("leadType") || "STUDY_ABROAD") as keyof typeof LEAD_TYPE_CONFIG;
-  const config = LEAD_TYPE_CONFIG[leadType];
+  const leadType = (watch("leadType") || "STUDY_ABROAD") as CreateLeadInput["leadType"];
+  const activeType = LEAD_TYPES.find((t) => t.value === leadType)!;
   const isStudyAbroad = leadType === "STUDY_ABROAD";
   const isDateBooking = leadType === "DATE_BOOKING";
 
@@ -150,10 +110,7 @@ export default function QuickLeadForm() {
   }
 
   async function submitLead(data: CreateLeadInput, force = false) {
-    if (!force && duplicate) {
-      setShowDupDialog(true);
-      return;
-    }
+    if (!force && duplicate) { setShowDupDialog(true); return; }
     setSubmitting(true);
     try {
       const res = await fetch("/api/leads", {
@@ -183,43 +140,33 @@ export default function QuickLeadForm() {
 
   if (createdLead) {
     return (
-      <div className="max-w-lg mx-auto">
-        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
-          <div className="bg-gradient-to-r from-green-500 to-emerald-600 px-8 py-10 text-center">
-            <div className="w-16 h-16 bg-white/20 rounded-full flex items-center justify-center mx-auto mb-4">
-              <CheckCircle className="w-9 h-9 text-white" />
-            </div>
-            <h2 className="text-2xl font-bold text-white mb-1">Lead Created!</h2>
-            <p className="text-green-100 text-sm">Successfully added to your pipeline</p>
+      <div className="max-w-md mx-auto bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+        <div className="bg-green-600 px-8 py-8 text-center">
+          <CheckCircle className="w-12 h-12 text-white mx-auto mb-3" />
+          <h2 className="text-xl font-bold text-white">Lead Created</h2>
+          <p className="text-green-200 text-sm mt-1">{createdLead.leadId}</p>
+        </div>
+        <div className="px-6 py-5 space-y-2 text-sm">
+          <div className="flex justify-between py-2 border-b border-gray-100">
+            <span className="text-gray-500">Student</span>
+            <span className="font-medium text-gray-800">{createdLead.studentName}</span>
           </div>
-          <div className="px-8 py-6 space-y-3">
-            <div className="flex items-center justify-between py-2 border-b border-gray-100">
-              <span className="text-sm text-gray-500">Lead ID</span>
-              <span className="font-mono font-bold text-blue-700">{createdLead.leadId}</span>
-            </div>
-            <div className="flex items-center justify-between py-2 border-b border-gray-100">
-              <span className="text-sm text-gray-500">Student</span>
-              <span className="font-medium text-gray-800">{createdLead.studentName}</span>
-            </div>
-            <div className="flex items-center justify-between py-2 border-b border-gray-100">
-              <span className="text-sm text-gray-500">Phone</span>
-              <span className="font-medium text-gray-800">{createdLead.phone}</span>
-            </div>
-            {createdLead.assignedCounsellor && (
-              <div className="flex items-center justify-between py-2">
-                <span className="text-sm text-gray-500">Assigned to</span>
-                <span className="font-medium text-gray-800">{createdLead.assignedCounsellor.name}</span>
-              </div>
-            )}
+          <div className="flex justify-between py-2 border-b border-gray-100">
+            <span className="text-gray-500">Phone</span>
+            <span className="font-medium text-gray-800">{createdLead.phone}</span>
           </div>
-          <div className="px-8 pb-8 flex gap-3">
-            <Link href={`/leads/${createdLead.id}`} className="flex-1">
-              <Button variant="outline" className="w-full">Open Lead</Button>
-            </Link>
-            <Button onClick={handleCreateAnother} className="flex-1 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800">
-              <Sparkles size={15} className="mr-2" />Add Another
-            </Button>
-          </div>
+          {createdLead.assignedCounsellor && (
+            <div className="flex justify-between py-2">
+              <span className="text-gray-500">Assigned to</span>
+              <span className="font-medium text-gray-800">{createdLead.assignedCounsellor.name}</span>
+            </div>
+          )}
+        </div>
+        <div className="px-6 pb-6 flex gap-3">
+          <Link href={`/leads/${createdLead.id}`} className="flex-1">
+            <Button variant="outline" className="w-full">Open Lead</Button>
+          </Link>
+          <Button onClick={handleCreateAnother} className="flex-1">Add Another</Button>
         </div>
       </div>
     );
@@ -227,282 +174,200 @@ export default function QuickLeadForm() {
 
   return (
     <>
-      <form onSubmit={handleSubmit((data) => submitLead(data, forceCreate))} className="max-w-3xl mx-auto space-y-5">
+      <form onSubmit={handleSubmit((data) => submitLead(data, forceCreate))} className="space-y-4">
 
-        {/* Lead Type Selector */}
-        <div>
-          <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">Lead Type</p>
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-            {(Object.keys(LEAD_TYPE_CONFIG) as Array<keyof typeof LEAD_TYPE_CONFIG>).map((type) => {
-              const cfg = LEAD_TYPE_CONFIG[type];
-              const Icon = cfg.icon;
-              const isActive = leadType === type;
-              return (
-                <button
-                  key={type}
-                  type="button"
-                  onClick={() => setValue("leadType", type as CreateLeadInput["leadType"])}
-                  className={cn(
-                    "relative flex flex-col items-center gap-2 p-4 rounded-2xl border-2 transition-all duration-150 text-center",
-                    isActive
-                      ? `${cfg.border} ${cfg.lightBg} shadow-sm ring-2 ${cfg.ring} ring-offset-1`
-                      : "border-gray-200 bg-white hover:border-gray-300 hover:bg-gray-50"
-                  )}
-                >
-                  <div className={cn("w-10 h-10 rounded-xl flex items-center justify-center", isActive ? `bg-gradient-to-br ${cfg.gradient}` : "bg-gray-100")}>
-                    <Icon size={18} className={isActive ? "text-white" : "text-gray-500"} />
-                  </div>
-                  <div>
-                    <p className={cn("text-xs font-semibold leading-tight", isActive ? cfg.text : "text-gray-600")}>{cfg.label}</p>
-                  </div>
-                  {isActive && (
-                    <div className={cn("absolute top-2 right-2 w-2 h-2 rounded-full bg-gradient-to-br", cfg.gradient)} />
-                  )}
-                </button>
-              );
-            })}
-          </div>
+        {/* Lead Type Tabs */}
+        <div className="flex gap-2 p-1 bg-white rounded-xl border border-gray-200 shadow-sm w-fit">
+          {LEAD_TYPES.map((t) => {
+            const Icon = t.icon;
+            const isActive = leadType === t.value;
+            return (
+              <button
+                key={t.value}
+                type="button"
+                onClick={() => setValue("leadType", t.value as CreateLeadInput["leadType"])}
+                className={cn(
+                  "flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all duration-150",
+                  isActive
+                    ? `${t.activeBg} ${t.activeText} shadow-sm`
+                    : `text-gray-500 ${t.hoverBg} hover:text-gray-700`
+                )}
+              >
+                <Icon size={15} />
+                <span className="hidden sm:inline">{t.label}</span>
+              </button>
+            );
+          })}
         </div>
 
-        {/* Main Form Card */}
-        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
-          {/* Card Header */}
-          <div className={cn("bg-gradient-to-r px-6 py-4", config.gradient)}>
-            <div className="flex items-center gap-3">
-              <div className="w-8 h-8 bg-white/20 rounded-lg flex items-center justify-center">
-                <config.icon size={16} className="text-white" />
-              </div>
-              <div>
-                <h3 className="font-semibold text-white text-sm">{config.label} Lead</h3>
-                <p className="text-white/70 text-xs">{config.description}</p>
-              </div>
-            </div>
-          </div>
+        {/* Form Card */}
+        <div className="bg-white rounded-2xl border border-gray-200 shadow-sm">
+          {/* Thin colored top bar indicating lead type */}
+          <div className={cn("h-1 rounded-t-2xl", activeType.activeBg)} />
 
-          <div className="p-6 space-y-6">
-            {/* Student Info Section */}
-            <div>
-              <div className="flex items-center gap-2 mb-4">
-                <div className="w-6 h-6 rounded-lg bg-blue-100 flex items-center justify-center">
-                  <User size={12} className="text-blue-600" />
-                </div>
-                <span className="text-sm font-semibold text-gray-700">Student Information</span>
-                <div className="flex-1 h-px bg-gray-100 ml-1" />
+          <div className="p-6 space-y-5">
+            {/* Student */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="space-y-1.5">
+                <Label htmlFor="studentName" className="text-sm font-medium text-gray-700">Full Name <span className="text-red-500">*</span></Label>
+                <Input id="studentName" placeholder="e.g. Ram Bahadur Thapa" {...register("studentName")} />
+                {errors.studentName && <p className="text-xs text-red-500">{errors.studentName.message}</p>}
               </div>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div className="space-y-1.5">
-                  <Label htmlFor="studentName" className="text-xs font-medium text-gray-600">Full Name <span className="text-red-500">*</span></Label>
-                  <div className="relative">
-                    <User size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
-                    <Input id="studentName" placeholder="e.g. Ram Bahadur Thapa" className="pl-9" {...register("studentName")} />
-                  </div>
-                  {errors.studentName && <p className="text-xs text-red-500">{errors.studentName.message}</p>}
-                </div>
-                <div className="space-y-1.5">
-                  <Label htmlFor="phone" className="text-xs font-medium text-gray-600">Phone Number <span className="text-red-500">*</span></Label>
-                  <div className="relative">
-                    <Phone size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
-                    <Input
-                      id="phone"
-                      placeholder="98XXXXXXXX"
-                      className="pl-9"
-                      {...register("phone")}
-                      onBlur={(e) => checkDuplicate(e.target.value)}
-                    />
-                  </div>
-                  {errors.phone && <p className="text-xs text-red-500">{errors.phone.message}</p>}
-                  {duplicate && (
-                    <p className="text-xs text-amber-600 flex items-center gap-1 bg-amber-50 px-2 py-1 rounded-md">
-                      <AlertTriangle size={11} />Duplicate: {duplicate.studentName} already exists
-                    </p>
-                  )}
-                </div>
+              <div className="space-y-1.5">
+                <Label htmlFor="phone" className="text-sm font-medium text-gray-700">Phone <span className="text-red-500">*</span></Label>
+                <Input
+                  id="phone"
+                  placeholder="98XXXXXXXX"
+                  {...register("phone")}
+                  onBlur={(e) => checkDuplicate(e.target.value)}
+                />
+                {errors.phone && <p className="text-xs text-red-500">{errors.phone.message}</p>}
+                {duplicate && (
+                  <p className="text-xs text-amber-600 flex items-center gap-1">
+                    <AlertTriangle size={11} />Duplicate: {duplicate.studentName} already exists
+                  </p>
+                )}
               </div>
             </div>
 
-            {/* Lead Details Section */}
-            <div>
-              <div className="flex items-center gap-2 mb-4">
-                <div className={cn("w-6 h-6 rounded-lg flex items-center justify-center", config.lightBg)}>
-                  <config.icon size={12} className={config.text} />
-                </div>
-                <span className="text-sm font-semibold text-gray-700">Lead Details</span>
-                <div className="flex-1 h-px bg-gray-100 ml-1" />
-              </div>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div className="space-y-1.5">
-                  <Label className="text-xs font-medium text-gray-600">Education Level <span className="text-red-500">*</span></Label>
-                  <Select onValueChange={(v) => setValue("educationLevel", v)}>
-                    <SelectTrigger>
-                      <GraduationCap size={14} className="text-gray-400 mr-2 flex-shrink-0" />
-                      <SelectValue placeholder="Select level" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {EDUCATION_LEVELS.map((l) => <SelectItem key={l} value={l}>{l}</SelectItem>)}
-                    </SelectContent>
-                  </Select>
-                  {errors.educationLevel && <p className="text-xs text-red-500">{errors.educationLevel.message}</p>}
-                </div>
+            <div className="h-px bg-gray-100" />
 
-                {isStudyAbroad ? (
-                  <div className="space-y-1.5">
-                    <Label className="text-xs font-medium text-gray-600">Interested Country <span className="text-red-500">*</span></Label>
-                    <Select onValueChange={(v) => setValue("countryId", v)}>
-                      <SelectTrigger>
-                        <Globe size={14} className="text-gray-400 mr-2 flex-shrink-0" />
-                        <SelectValue placeholder="Select country" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {refData?.countries.map((c) => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                ) : isDateBooking ? (
-                  <div className="space-y-1.5">
-                    <Label htmlFor="bookingDate" className="text-xs font-medium text-gray-600">Test Booking Date</Label>
-                    <div className="relative">
-                      <Calendar size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
-                      <Input id="bookingDate" type="date" className="pl-9" {...register("bookingDate")} />
-                    </div>
-                  </div>
-                ) : (
-                  <div className="space-y-1.5">
-                    <Label className="text-xs font-medium text-gray-600">Test Type</Label>
-                    <div className={cn("h-10 flex items-center px-3 rounded-md border text-sm font-medium gap-2", config.lightBg, config.border)}>
-                      <config.icon size={14} className={config.text} />
-                      <span className={config.text}>{LEAD_TYPE_LABELS[leadType]}</span>
-                    </div>
-                  </div>
-                )}
+            {/* Details */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="space-y-1.5">
+                <Label className="text-sm font-medium text-gray-700">Education Level <span className="text-red-500">*</span></Label>
+                <Select onValueChange={(v) => setValue("educationLevel", v)}>
+                  <SelectTrigger><SelectValue placeholder="Select level" /></SelectTrigger>
+                  <SelectContent>
+                    {EDUCATION_LEVELS.map((l) => <SelectItem key={l} value={l}>{l}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+                {errors.educationLevel && <p className="text-xs text-red-500">{errors.educationLevel.message}</p>}
               </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-4">
+              {isStudyAbroad ? (
                 <div className="space-y-1.5">
-                  <Label className="text-xs font-medium text-gray-600">Lead Source <span className="text-red-500">*</span></Label>
-                  <Select onValueChange={(v) => setValue("sourceId", v)} value={watch("sourceId")}>
-                    <SelectTrigger><SelectValue placeholder="How did they find us?" /></SelectTrigger>
+                  <Label className="text-sm font-medium text-gray-700">Interested Country</Label>
+                  <Select onValueChange={(v) => setValue("countryId", v)}>
+                    <SelectTrigger><SelectValue placeholder="Select country" /></SelectTrigger>
                     <SelectContent>
-                      {refData?.sources.map((s) => <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>)}
+                      {refData?.countries.map((c) => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}
                     </SelectContent>
                   </Select>
-                  {errors.sourceId && <p className="text-xs text-red-500">{errors.sourceId.message}</p>}
                 </div>
-                {isStudyAbroad && (
-                  <div className="space-y-1.5">
-                    <Label className="text-xs font-medium text-gray-600">Intake</Label>
-                    <Select onValueChange={(v) => setValue("intakeId", v)}>
-                      <SelectTrigger><SelectValue placeholder="Select intake" /></SelectTrigger>
-                      <SelectContent>
-                        {refData?.intakes.map((i) => <SelectItem key={i.id} value={i.id}>{i.name}</SelectItem>)}
-                      </SelectContent>
-                    </Select>
+              ) : isDateBooking ? (
+                <div className="space-y-1.5">
+                  <Label htmlFor="bookingDate" className="text-sm font-medium text-gray-700">Test Booking Date</Label>
+                  <Input id="bookingDate" type="date" {...register("bookingDate")} />
+                </div>
+              ) : (
+                <div className="space-y-1.5">
+                  <Label className="text-sm font-medium text-gray-700">Test Type</Label>
+                  <div className={cn("h-9 flex items-center px-3 rounded-md border text-sm font-medium gap-2 bg-gray-50")}>
+                    <activeType.icon size={14} className={activeType.color} />
+                    <span className="text-gray-700">{LEAD_TYPE_LABELS[leadType]}</span>
                   </div>
-                )}
+                </div>
+              )}
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="space-y-1.5">
+                <Label className="text-sm font-medium text-gray-700">Lead Source <span className="text-red-500">*</span></Label>
+                <Select onValueChange={(v) => setValue("sourceId", v)} value={watch("sourceId")}>
+                  <SelectTrigger><SelectValue placeholder="How did they find us?" /></SelectTrigger>
+                  <SelectContent>
+                    {refData?.sources.map((s) => <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+                {errors.sourceId && <p className="text-xs text-red-500">{errors.sourceId.message}</p>}
               </div>
+              {isStudyAbroad && (
+                <div className="space-y-1.5">
+                  <Label className="text-sm font-medium text-gray-700">Intake</Label>
+                  <Select onValueChange={(v) => setValue("intakeId", v)}>
+                    <SelectTrigger><SelectValue placeholder="Select intake" /></SelectTrigger>
+                    <SelectContent>
+                      {refData?.intakes.map((i) => <SelectItem key={i.id} value={i.id}>{i.name}</SelectItem>)}
+                    </SelectContent>
+                  </Select>
+                </div>
+              )}
             </div>
           </div>
         </div>
 
         {/* Optional Fields */}
-        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+        <div className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
           <button
             type="button"
             onClick={() => setShowOptional(!showOptional)}
             className="flex items-center justify-between w-full px-6 py-4 text-left hover:bg-gray-50 transition-colors"
           >
             <div className="flex items-center gap-2">
-              <div className="w-6 h-6 rounded-lg bg-gray-100 flex items-center justify-center">
-                <FileText size={12} className="text-gray-500" />
-              </div>
-              <span className="text-sm font-semibold text-gray-700">Additional Information</span>
-              <span className="text-xs text-gray-400 bg-gray-100 px-2 py-0.5 rounded-full">Optional</span>
+              <span className="text-sm font-medium text-gray-700">Additional Information</span>
+              <span className="text-xs text-gray-400 bg-gray-100 px-2 py-0.5 rounded-full">optional</span>
             </div>
-            {showOptional
-              ? <ChevronUp size={16} className="text-gray-400" />
-              : <ChevronDown size={16} className="text-gray-400" />}
+            {showOptional ? <ChevronUp size={16} className="text-gray-400" /> : <ChevronDown size={16} className="text-gray-400" />}
           </button>
 
           {showOptional && (
             <div className="px-6 pb-6 space-y-4 border-t border-gray-100 pt-4">
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="space-y-1.5">
-                  <Label htmlFor="email" className="text-xs font-medium text-gray-600">Email Address</Label>
-                  <div className="relative">
-                    <Mail size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
-                    <Input id="email" type="email" placeholder="email@example.com" className="pl-9" {...register("email")} />
-                  </div>
+                  <Label htmlFor="email" className="text-sm font-medium text-gray-700">Email</Label>
+                  <Input id="email" type="email" placeholder="email@example.com" {...register("email")} />
                 </div>
                 <div className="space-y-1.5">
-                  <Label htmlFor="course" className="text-xs font-medium text-gray-600">Preferred Course</Label>
-                  <div className="relative">
-                    <BookOpen size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
-                    <Input id="course" placeholder="e.g. Computer Science" className="pl-9" {...register("course")} />
-                  </div>
+                  <Label htmlFor="course" className="text-sm font-medium text-gray-700">Preferred Course</Label>
+                  <Input id="course" placeholder="e.g. Computer Science" {...register("course")} />
                 </div>
               </div>
-
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="space-y-1.5">
-                  <Label className="text-xs font-medium text-gray-600">Branch</Label>
+                  <Label className="text-sm font-medium text-gray-700">Branch</Label>
                   <Select onValueChange={(v) => setValue("branchId", v)}>
-                    <SelectTrigger>
-                      <Building2 size={14} className="text-gray-400 mr-2 flex-shrink-0" />
-                      <SelectValue placeholder="Select branch" />
-                    </SelectTrigger>
+                    <SelectTrigger><SelectValue placeholder="Select branch" /></SelectTrigger>
                     <SelectContent>
                       {refData?.branches.map((b) => <SelectItem key={b.id} value={b.id}>{b.name}</SelectItem>)}
                     </SelectContent>
                   </Select>
                 </div>
                 <div className="space-y-1.5">
-                  <Label className="text-xs font-medium text-gray-600">Assign Counsellor</Label>
+                  <Label className="text-sm font-medium text-gray-700">Assign Counsellor</Label>
                   <Select onValueChange={(v) => setValue("assignedCounsellorId", v)}>
-                    <SelectTrigger>
-                      <UserCheck size={14} className="text-gray-400 mr-2 flex-shrink-0" />
-                      <SelectValue placeholder="Auto-assign" />
-                    </SelectTrigger>
+                    <SelectTrigger><SelectValue placeholder="Auto-assign" /></SelectTrigger>
                     <SelectContent>
                       {refData?.counsellors.map((c) => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}
                     </SelectContent>
                   </Select>
                 </div>
               </div>
-
               <div className="space-y-1.5">
-                <Label htmlFor="notes" className="text-xs font-medium text-gray-600">Notes</Label>
-                <Textarea id="notes" placeholder="Any additional context about this lead..." rows={3} {...register("notes")} />
+                <Label htmlFor="notes" className="text-sm font-medium text-gray-700">Notes</Label>
+                <Textarea id="notes" placeholder="Any additional notes..." rows={3} {...register("notes")} />
               </div>
             </div>
           )}
         </div>
 
-        <div className="flex items-center gap-3">
-          <Button
-            type="submit"
-            disabled={submitting}
-            size="lg"
-            className={cn("px-8 bg-gradient-to-r text-white shadow-sm hover:shadow-md transition-all", config.gradient, "hover:opacity-90")}
-          >
-            {submitting
-              ? <><Loader2 size={16} className="mr-2 animate-spin" />Creating...</>
-              : <><Sparkles size={16} className="mr-2" />Create Lead</>}
+        <div className="flex items-center gap-4">
+          <Button type="submit" disabled={submitting} size="lg" className="px-8">
+            {submitting ? <><Loader2 size={15} className="mr-2 animate-spin" />Creating...</> : "Create Lead"}
           </Button>
           {duplicate && (
             <p className="text-xs text-amber-600 flex items-center gap-1">
-              <AlertTriangle size={12} />Possible duplicate — review before submitting
+              <AlertTriangle size={12} />Possible duplicate — you can still submit
             </p>
           )}
         </div>
       </form>
 
-      {/* Duplicate Warning Dialog */}
       <Dialog open={showDupDialog} onOpenChange={setShowDupDialog}>
         <DialogContent>
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
-              <div className="w-8 h-8 rounded-full bg-amber-100 flex items-center justify-center">
-                <AlertTriangle className="text-amber-500" size={16} />
-              </div>
+              <AlertTriangle className="text-amber-500" size={18} />
               Duplicate Lead Found
             </DialogTitle>
           </DialogHeader>
@@ -522,11 +387,7 @@ export default function QuickLeadForm() {
               <Button variant="outline" className="w-full sm:w-auto">Open Existing Lead</Button>
             </Link>
             <Button
-              onClick={() => {
-                setShowDupDialog(false);
-                setForceCreate(true);
-                handleSubmit((data) => submitLead(data, true))();
-              }}
+              onClick={() => { setShowDupDialog(false); setForceCreate(true); handleSubmit((data) => submitLead(data, true))(); }}
               variant="destructive"
             >
               Create Anyway
