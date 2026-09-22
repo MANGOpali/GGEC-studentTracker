@@ -100,14 +100,6 @@ export default function LoginPage() {
               </Button>
             </form>
 
-            <div className="mt-6 pt-4 border-t">
-              <p className="text-xs text-gray-400 text-center">Demo credentials:</p>
-              <div className="mt-2 space-y-1 text-xs text-gray-500 text-center">
-                <p>Admin: admin@globalgate.edu / Admin@123456</p>
-                <p>Counsellor: priya@globalgate.edu / Counsellor@123456</p>
-                <p>Reception: reception@globalgate.edu / Reception@123456</p>
-              </div>
-            </div>
           </CardContent>
         </Card>
       </div>
