@@ -6,11 +6,11 @@ import KPICard from "@/components/dashboard/KPICard";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
-  PieChart, Pie, Cell,
+  PieChart, Pie, Cell, Legend,
 } from "recharts";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
-const COLORS = ["#0E356B", "#1a4e9a", "#2d6bb5", "#4a8fd4", "#6aaee3", "#8fccf0", "#b3dff8", "#d4eefd"];
+const COLORS = ["#6366f1", "#f59e0b", "#10b981", "#ef4444", "#8b5cf6", "#06b6d4", "#f97316", "#ec4899"];
 
 const fetchStats = () => fetch("/api/dashboard/stats").then((r) => r.json());
 const fetchSources = () => fetch("/api/reports/sources").then((r) => r.json());
@@ -87,12 +87,24 @@ export default function AdminDashboardClient() {
           <CardContent>
             {sourceStats.length > 0 ? (
               <ResponsiveContainer width="100%" height={250}>
-                <BarChart data={sourceStats.slice(0, 8)}>
-                  <CartesianGrid strokeDasharray="3 3" vertical={false} />
-                  <XAxis dataKey="sourceName" tick={{ fontSize: 11 }} />
-                  <YAxis tick={{ fontSize: 11 }} />
-                  <Tooltip />
-                  <Bar dataKey="total" fill="#0E356B" radius={[4, 4, 0, 0]} />
+                <BarChart data={sourceStats.slice(0, 8)} barSize={32}>
+                  <defs>
+                    {sourceStats.slice(0, 8).map((_, i) => (
+                      <linearGradient key={i} id={`barGrad${i}`} x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="0%" stopColor={COLORS[i % COLORS.length]} stopOpacity={1} />
+                        <stop offset="100%" stopColor={COLORS[i % COLORS.length]} stopOpacity={0.55} />
+                      </linearGradient>
+                    ))}
+                  </defs>
+                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f0f0f0" />
+                  <XAxis dataKey="sourceName" tick={{ fontSize: 11 }} axisLine={false} tickLine={false} />
+                  <YAxis tick={{ fontSize: 11 }} axisLine={false} tickLine={false} />
+                  <Tooltip contentStyle={{ borderRadius: 8, border: "none", boxShadow: "0 4px 12px rgba(0,0,0,0.1)" }} />
+                  <Bar dataKey="total" radius={[6, 6, 0, 0]}>
+                    {sourceStats.slice(0, 8).map((_, i) => (
+                      <Cell key={i} fill={`url(#barGrad${i})`} />
+                    ))}
+                  </Bar>
                 </BarChart>
               </ResponsiveContainer>
             ) : (
@@ -105,15 +117,14 @@ export default function AdminDashboardClient() {
           <CardHeader><CardTitle className="text-base text-gray-800">Leads by Country</CardTitle></CardHeader>
           <CardContent>
             {countryStats.length > 0 ? (
-              <ResponsiveContainer width="100%" height={250}>
+              <ResponsiveContainer width="100%" height={260}>
                 <PieChart>
-                  <Pie data={countryStats.slice(0, 8)} cx="50%" cy="50%" outerRadius={90}
-                    dataKey="total" nameKey="countryName"
-                    label={({ countryName, percent }) => `${countryName} ${(percent * 100).toFixed(0)}%`}
-                    labelLine={false}>
-                    {countryStats.slice(0, 8).map((_, i) => <Cell key={i} fill={COLORS[i % COLORS.length]} />)}
+                  <Pie data={countryStats.slice(0, 8)} cx="50%" cy="45%" outerRadius={85} innerRadius={35}
+                    dataKey="total" nameKey="countryName" paddingAngle={3}>
+                    {countryStats.slice(0, 8).map((_, i) => <Cell key={i} fill={COLORS[i % COLORS.length]} stroke="none" />)}
                   </Pie>
-                  <Tooltip />
+                  <Tooltip contentStyle={{ borderRadius: 8, border: "none", boxShadow: "0 4px 12px rgba(0,0,0,0.1)" }} />
+                  <Legend iconType="circle" iconSize={8} wrapperStyle={{ fontSize: 11 }} />
                 </PieChart>
               </ResponsiveContainer>
             ) : (
