@@ -55,6 +55,7 @@ export const updateLeadSchema = z.object({
   referredBy: z.string().optional(),
   branchId: z.string().optional().or(z.literal("")),
   assignedCounsellorId: z.string().optional().or(z.literal("")),
+  teacherId: z.string().optional().or(z.literal("")),
   notes: z.string().max(2000).optional(),
   status: z.string().optional(),
   nextFollowUpAt: z.string().optional(),

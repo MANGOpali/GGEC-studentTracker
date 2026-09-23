@@ -52,7 +52,7 @@ const LEAD_TYPES = [
   { value: "DATE_BOOKING", label: "Date Booking", icon: Calendar, color: "text-teal-600", activeBg: "bg-teal-600", activeText: "text-white", hoverBg: "hover:bg-teal-50" },
 ];
 
-export default function QuickLeadForm() {
+export default function QuickLeadForm({ allowedTypes }: { allowedTypes?: string[] } = {}) {
   const searchParams = useSearchParams();
   const { toast } = useToast();
 
@@ -83,7 +83,8 @@ export default function QuickLeadForm() {
   });
 
   const leadType = (watch("leadType") || "STUDY_ABROAD") as CreateLeadInput["leadType"];
-  const activeType = LEAD_TYPES.find((t) => t.value === leadType)!;
+  const visibleTypes = allowedTypes ? LEAD_TYPES.filter((t) => allowedTypes.includes(t.value)) : LEAD_TYPES;
+  const activeType = LEAD_TYPES.find((t) => t.value === leadType) ?? visibleTypes[0];
   const isStudyAbroad = leadType === "STUDY_ABROAD";
   const isDateBooking = leadType === "DATE_BOOKING";
 
@@ -178,7 +179,7 @@ export default function QuickLeadForm() {
 
         {/* Lead Type Tabs */}
         <div className="flex gap-2 p-1 bg-white rounded-xl border border-gray-200 shadow-sm w-fit">
-          {LEAD_TYPES.map((t) => {
+          {visibleTypes.map((t) => {
             const Icon = t.icon;
             const isActive = leadType === t.value;
             return (

@@ -20,7 +20,7 @@ export async function requireAuth(): Promise<SessionData> {
 }
 
 export async function requireRole(
-  ...roles: Array<"ADMIN" | "COUNSELLOR" | "RECEPTIONIST">
+  ...roles: Array<"ADMIN" | "COUNSELLOR" | "RECEPTIONIST" | "TEACHER">
 ): Promise<SessionData> {
   const user = await requireAuth();
   if (!roles.includes(user.role)) redirect("/unauthorized");
@@ -29,4 +29,8 @@ export async function requireRole(
 
 export async function requireAdmin(): Promise<SessionData> {
   return requireRole("ADMIN");
+}
+
+export async function requireTeacher(): Promise<SessionData> {
+  return requireRole("TEACHER", "ADMIN");
 }

@@ -33,6 +33,9 @@ export async function middleware(request: NextRequest) {
   if (pathname.startsWith("/reception") && role !== "RECEPTIONIST" && role !== "ADMIN") {
     return NextResponse.redirect(new URL("/unauthorized", request.url));
   }
+  if (pathname.startsWith("/teacher") && role !== "TEACHER" && role !== "ADMIN") {
+    return NextResponse.redirect(new URL("/unauthorized", request.url));
+  }
 
   // Prevent browser / CDN from caching protected pages so a stale
   // response from a previous session is never replayed.

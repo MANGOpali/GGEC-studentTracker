@@ -7,7 +7,7 @@ import Link from "next/link";
 import {
   ArrowLeft, Calendar, MessageSquare, CheckCircle, AlertCircle, Pencil,
   Phone, Mail, GraduationCap, Globe, BookOpen, User, Building2, Zap,
-  Clock, UserCheck, MapPin, Tag, FileText, MoreHorizontal
+  Clock, UserCheck, MapPin, Tag, FileText, MoreHorizontal, GraduationCap as TeacherIcon
 } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
@@ -34,6 +34,7 @@ interface Lead {
   intake: { id: string; name: string } | null;
   branch: { id: string; name: string } | null;
   assignedCounsellor: { id: string; name: string; email: string } | null;
+  teacher: { id: string; name: string } | null;
   createdBy: { id: string; name: string };
   activities: Array<{
     id: string; action: string; metadata: Record<string, unknown> | null;
@@ -138,6 +139,7 @@ export default function LeadDetailClient({ id }: { id: string }) {
       educationLevel: lead!.educationLevel, countryId: lead!.country?.id || "",
       course: lead!.course || "", intakeId: lead!.intake?.id || "",
       branchId: lead!.branch?.id || "", assignedCounsellorId: lead!.assignedCounsellor?.id || "",
+      teacherId: lead!.teacher?.id || "",
       notes: lead!.notes || "", bookingDate: lead!.bookingDate ? lead!.bookingDate.slice(0, 10) : "",
     });
     setShowEditDialog(true);
@@ -186,9 +188,9 @@ export default function LeadDetailClient({ id }: { id: string }) {
         <div className={cn("h-1", typeConfig.bar)} />
         <div className="px-6 py-5 flex items-center justify-between gap-4 flex-wrap">
           <div className="flex items-center gap-4">
-            <Link href="/admin/leads" className="w-8 h-8 rounded-lg border border-gray-200 flex items-center justify-center text-gray-400 hover:text-gray-700 hover:bg-gray-50 transition-colors flex-shrink-0">
+            <button onClick={() => router.back()} className="w-8 h-8 rounded-lg border border-gray-200 flex items-center justify-center text-gray-400 hover:text-gray-700 hover:bg-gray-50 transition-colors flex-shrink-0">
               <ArrowLeft size={16} />
-            </Link>
+            </button>
             <div className={cn("w-12 h-12 rounded-2xl flex items-center justify-center text-lg font-bold flex-shrink-0", typeConfig.light, typeConfig.text)}>
               {lead.studentName.charAt(0).toUpperCase()}
             </div>
@@ -366,6 +368,20 @@ export default function LeadDetailClient({ id }: { id: string }) {
                   </div>
                 ) : <span className="text-gray-400 font-normal">Unassigned</span>}
               />
+              {lead.teacher && (
+                <InfoRow
+                  label="Teacher"
+                  icon={TeacherIcon}
+                  value={
+                    <div className="flex items-center gap-2">
+                      <div className="w-5 h-5 rounded-full bg-emerald-100 text-emerald-700 text-xs font-bold flex items-center justify-center">
+                        {lead.teacher.name.charAt(0)}
+                      </div>
+                      <span>{lead.teacher.name}</span>
+                    </div>
+                  }
+                />
+              )}
               <InfoRow label="Created by" value={lead.createdBy.name} icon={User} />
               <InfoRow label="Added" value={formatDateTime(lead.createdAt)} icon={Clock} />
               {lead.referredBy && <InfoRow label="Referred by" value={lead.referredBy} icon={MapPin} />}
@@ -496,6 +512,16 @@ export default function LeadDetailClient({ id }: { id: string }) {
                   <SelectContent>
                     <SelectItem value="">Unassigned</SelectItem>
                     {refData?.counsellors?.map((c: { id: string; name: string }) => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-1.5">
+                <Label>Assign Teacher</Label>
+                <Select value={editFields.teacherId || ""} onValueChange={(v) => setEditFields((f) => ({ ...f, teacherId: v }))}>
+                  <SelectTrigger><SelectValue placeholder="No teacher" /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="">No teacher</SelectItem>
+                    {refData?.teachers?.map((t: { id: string; name: string }) => <SelectItem key={t.id} value={t.id}>{t.name}</SelectItem>)}
                   </SelectContent>
                 </Select>
               </div>

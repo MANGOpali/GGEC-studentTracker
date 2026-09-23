@@ -11,6 +11,7 @@ enum UserRole {
   ADMIN
   COUNSELLOR
   RECEPTIONIST
+  TEACHER
 }
 
 enum LeadType {
@@ -96,6 +97,7 @@ model User {
 
   assignedLeads Lead[]         @relation("AssignedLeads")
   createdLeads  Lead[]         @relation("CreatedLeads")
+  teachingLeads Lead[]         @relation("TeacherLeads")
   activities    LeadActivity[]
   notifications Notification[]
 }
@@ -154,6 +156,8 @@ model Lead {
   branch               Branch?    @relation(fields: [branchId], references: [id])
   assignedCounsellorId String?
   assignedCounsellor   User?      @relation("AssignedLeads", fields: [assignedCounsellorId], references: [id])
+  teacherId            String?
+  teacher              User?      @relation("TeacherLeads", fields: [teacherId], references: [id])
   status               LeadStatus @default(NEW)
   academicInfo         Json?
   englishTest          Json?
@@ -185,6 +189,7 @@ model Lead {
   @@index([status])
   @@index([leadType])
   @@index([assignedCounsellorId])
+  @@index([teacherId])
   @@index([createdAt])
   @@index([isArchived])
 }

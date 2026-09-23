@@ -31,12 +31,13 @@ async function buildLeadResponse(rawLead: Awaited<ReturnType<typeof prisma.lead.
   if (!rawLead) return null;
 
   // Round 1 parallel: all direct relation + activities queries at once
-  const [country, source, intake, branch, assignedCounsellor, createdBy, activities] = await Promise.all([
+  const [country, source, intake, branch, assignedCounsellor, teacher, createdBy, activities] = await Promise.all([
     rawLead.countryId ? prisma.country.findUnique({ where: { id: rawLead.countryId }, select: { id: true, name: true } }) : Promise.resolve(null),
     prisma.leadSource.findUnique({ where: { id: rawLead.sourceId }, select: { id: true, name: true } }),
     rawLead.intakeId ? prisma.intake.findUnique({ where: { id: rawLead.intakeId }, select: { id: true, name: true } }) : Promise.resolve(null),
     rawLead.branchId ? prisma.branch.findUnique({ where: { id: rawLead.branchId }, select: { id: true, name: true } }) : Promise.resolve(null),
     rawLead.assignedCounsellorId ? prisma.user.findUnique({ where: { id: rawLead.assignedCounsellorId }, select: { id: true, name: true, email: true } }) : Promise.resolve(null),
+    rawLead.teacherId ? prisma.user.findUnique({ where: { id: rawLead.teacherId }, select: { id: true, name: true } }) : Promise.resolve(null),
     prisma.user.findUnique({ where: { id: rawLead.createdById }, select: { id: true, name: true } }),
     prisma.leadActivity.findMany({
       where: { leadId: rawLead.id },
@@ -60,6 +61,7 @@ async function buildLeadResponse(rawLead: Awaited<ReturnType<typeof prisma.lead.
     intake,
     branch,
     assignedCounsellor,
+    teacher,
     createdBy: createdBy ?? { id: rawLead.createdById, name: "—" },
     activities: activities.map((a) => ({
       ...a,
@@ -114,6 +116,8 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
     if (restFields.intakeId === "") updateData.intakeId = null;
     if (restFields.branchId === "") updateData.branchId = null;
     if (restFields.assignedCounsellorId === "") updateData.assignedCounsellorId = null;
+    if (restFields.teacherId === "") updateData.teacherId = null;
+    if (restFields.teacherId && restFields.teacherId !== existing.teacherId) updateData.teacherId = restFields.teacherId;
 
     const updated = await prisma.lead.update({ where: { id: existing.id }, data: updateData });
 
@@ -183,6 +187,17 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
       }
 
       Promise.all(notifyPromises).catch(() => {});
+    }
+
+    // Notify teacher when assigned to a lead
+    const newTeacherId = updateData.teacherId as string | null | undefined;
+    if (newTeacherId && newTeacherId !== existing.teacherId) {
+      createNotification({
+        userId: newTeacherId,
+        title: "Student Assigned",
+        message: `${existing.studentName} (${existing.leadId}) has been assigned to you.`,
+        leadId: existing.id,
+      }).catch(() => {});
     }
 
     const lead = await buildLeadResponse(updated);

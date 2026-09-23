@@ -6,7 +6,7 @@ export interface SessionData {
   userId: string;
   email: string;
   name: string;
-  role: "ADMIN" | "COUNSELLOR" | "RECEPTIONIST";
+  role: "ADMIN" | "COUNSELLOR" | "RECEPTIONIST" | "TEACHER";
   branchId?: string;
 }
 

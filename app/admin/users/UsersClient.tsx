@@ -26,6 +26,7 @@ const roleColors: Record<string, string> = {
   ADMIN: "bg-purple-100 text-purple-800",
   COUNSELLOR: "bg-blue-100 text-blue-800",
   RECEPTIONIST: "bg-green-100 text-green-800",
+  TEACHER: "bg-emerald-100 text-emerald-800",
 };
 
 export default function UsersClient() {
@@ -170,6 +171,7 @@ export default function UsersClient() {
                   <SelectContent>
                     <SelectItem value="COUNSELLOR">Counsellor</SelectItem>
                     <SelectItem value="RECEPTIONIST">Receptionist</SelectItem>
+                    <SelectItem value="TEACHER">Teacher</SelectItem>
                     <SelectItem value="ADMIN">Admin</SelectItem>
                   </SelectContent>
                 </Select>

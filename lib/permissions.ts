@@ -1,16 +1,20 @@
 import { SessionData } from "./session";
 
-export function canViewLead(user: SessionData, lead: { assignedCounsellorId: string | null; createdById: string }): boolean {
+type LeadOwnership = { assignedCounsellorId: string | null; createdById: string; teacherId?: string | null };
+
+export function canViewLead(user: SessionData, lead: LeadOwnership): boolean {
   if (user.role === "ADMIN") return true;
   if (user.role === "COUNSELLOR") return lead.assignedCounsellorId === user.userId;
   if (user.role === "RECEPTIONIST") return lead.createdById === user.userId;
+  if (user.role === "TEACHER") return lead.teacherId === user.userId;
   return false;
 }
 
-export function canEditLead(user: SessionData, lead: { assignedCounsellorId: string | null; createdById: string }): boolean {
+export function canEditLead(user: SessionData, lead: LeadOwnership): boolean {
   if (user.role === "ADMIN") return true;
   if (user.role === "COUNSELLOR") return lead.assignedCounsellorId === user.userId;
   if (user.role === "RECEPTIONIST") return lead.createdById === user.userId;
+  if (user.role === "TEACHER") return lead.teacherId === user.userId;
   return false;
 }
 
@@ -30,5 +34,6 @@ export function buildLeadWhereClause(user: SessionData) {
   if (user.role === "ADMIN") return { isArchived: false };
   if (user.role === "COUNSELLOR") return { assignedCounsellorId: user.userId, isArchived: false };
   if (user.role === "RECEPTIONIST") return { createdById: user.userId, isArchived: false };
+  if (user.role === "TEACHER") return { teacherId: user.userId, isArchived: false };
   return { id: "never" };
 }
