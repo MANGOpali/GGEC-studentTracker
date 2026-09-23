@@ -134,7 +134,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Validation failed", details: parsed.error.flatten() }, { status: 400 });
     }
 
-    const lead = await createLead(parsed.data, session.userId);
+    const lead = await createLead(parsed.data, session.userId, session.role === "TEACHER" ? session.userId : undefined);
     return NextResponse.json({ lead }, { status: 201 });
   } catch (err) {
     console.error("Create lead error:", err);

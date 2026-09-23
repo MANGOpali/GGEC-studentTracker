@@ -34,7 +34,7 @@ export async function checkDuplicate(phone: string, excludeId?: string) {
   return lead;
 }
 
-export async function createLead(data: CreateLeadInput, createdById: string) {
+export async function createLead(data: CreateLeadInput, createdById: string, teacherId?: string) {
   const seq = await getNextLeadSequence();
   const leadId = generateLeadId(seq);
 
@@ -54,6 +54,7 @@ export async function createLead(data: CreateLeadInput, createdById: string) {
       referredBy: data.referredBy || null,
       branchId: data.branchId || null,
       assignedCounsellorId: data.assignedCounsellorId || null,
+      teacherId: teacherId || null,
       notes: data.notes || null,
       campaign: data.campaign || null,
       campaignId: data.campaignId || null,
