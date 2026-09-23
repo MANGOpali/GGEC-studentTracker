@@ -99,13 +99,13 @@ export default function LoginPage() {
 
       {/* Right panel */}
       <div className="flex-1 flex flex-col items-center justify-center bg-gray-50 p-6 sm:p-12">
-        {/* Mobile logo */}
-        <div className="lg:hidden mb-8">
+        {/* Logo — always visible on right panel */}
+        <div className="mb-8">
           <Image
             src="/square-logo.jpg"
             alt="Global Gate Educational Consultancy"
-            width={220}
-            height={74}
+            width={160}
+            height={160}
             className="object-contain"
           />
         </div>
