@@ -13,7 +13,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
-import { ChevronDown, ChevronUp, Loader2, CheckCircle, AlertTriangle, Globe, BookOpen, Calendar, BookMarked } from "lucide-react";
+import { ChevronDown, ChevronUp, Loader2, CheckCircle, AlertTriangle, Globe, BookOpen, Calendar, BookMarked, ExternalLink, Plus } from "lucide-react";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
 import { EDUCATION_LEVELS, LEAD_TYPE_LABELS } from "@/lib/utils";
@@ -31,8 +31,12 @@ interface DuplicateLead {
   leadId: string;
   studentName: string;
   phone: string;
+  email: string | null;
+  educationLevel: string;
   status: string;
-  country: { name: string };
+  leadType: string;
+  country: { name: string } | null;
+  source: { id: string; name: string };
   assignedCounsellor: { name: string } | null;
   updatedAt: string;
 }
@@ -58,10 +62,12 @@ export default function QuickLeadForm({ allowedTypes }: { allowedTypes?: string[
 
   const [showOptional, setShowOptional] = useState(false);
   const [submitting, setSubmitting] = useState(false);
-  const [duplicate, setDuplicate] = useState<DuplicateLead | null>(null);
+  const [duplicates, setDuplicates] = useState<DuplicateLead[]>([]);
   const [showDupDialog, setShowDupDialog] = useState(false);
   const [createdLead, setCreatedLead] = useState<CreatedLead | null>(null);
   const [forceCreate, setForceCreate] = useState(false);
+
+  const duplicate = duplicates[0] ?? null;
 
   const { data: refData } = useQuery<RefData>({
     queryKey: ["reference"],
@@ -98,16 +104,27 @@ export default function QuickLeadForm({ allowedTypes }: { allowedTypes?: string[
     }
   }, [searchParams, refData, setValue]);
 
-  async function checkDuplicate(phoneVal: string) {
+  async function checkDuplicatePhone(phoneVal: string) {
     if (!phoneVal || phoneVal.length < 7) return;
     try {
       const res = await fetch(`/api/leads?phone=${encodeURIComponent(phoneVal)}`);
       if (res.ok) {
         const data = await res.json();
-        if (data.duplicate) setDuplicate(data.duplicate);
-        else setDuplicate(null);
+        setDuplicates(data.duplicates ?? (data.duplicate ? [data.duplicate] : []));
       }
     } catch {}
+  }
+
+  function prefillAsClassLead(type: "IELTS_CLASS" | "PTE_CLASS", from: DuplicateLead) {
+    setValue("leadType", type);
+    setValue("studentName", from.studentName);
+    setValue("phone", from.phone);
+    if (from.email) setValue("email", from.email);
+    setValue("educationLevel", from.educationLevel);
+    setValue("sourceId", from.source.id);
+    setForceCreate(true);
+    setShowDupDialog(false);
+    setShowOptional(true);
   }
 
   async function submitLead(data: CreateLeadInput, force = false) {
@@ -134,7 +151,7 @@ export default function QuickLeadForm({ allowedTypes }: { allowedTypes?: string[
 
   function handleCreateAnother() {
     setCreatedLead(null);
-    setDuplicate(null);
+    setDuplicates([]);
     setForceCreate(false);
     reset();
   }
@@ -220,12 +237,13 @@ export default function QuickLeadForm({ allowedTypes }: { allowedTypes?: string[
                   id="phone"
                   placeholder="98XXXXXXXX"
                   {...register("phone")}
-                  onBlur={(e) => checkDuplicate(e.target.value)}
+                  onBlur={(e) => checkDuplicatePhone(e.target.value)}
                 />
                 {errors.phone && <p className="text-xs text-red-500">{errors.phone.message}</p>}
-                {duplicate && (
+                {duplicates.length > 0 && (
                   <p className="text-xs text-amber-600 flex items-center gap-1">
-                    <AlertTriangle size={11} />Duplicate: {duplicate.studentName} already exists
+                    <AlertTriangle size={11} />
+                    {duplicates[0].studentName} already has {duplicates.length} record{duplicates.length > 1 ? "s" : ""} — see duplicate dialog
                   </p>
                 )}
               </div>
@@ -356,42 +374,91 @@ export default function QuickLeadForm({ allowedTypes }: { allowedTypes?: string[
           <Button type="submit" disabled={submitting} size="lg" className="px-8">
             {submitting ? <><Loader2 size={15} className="mr-2 animate-spin" />Creating...</> : "Create Lead"}
           </Button>
-          {duplicate && (
+          {duplicates.length > 0 && !forceCreate && (
             <p className="text-xs text-amber-600 flex items-center gap-1">
-              <AlertTriangle size={12} />Possible duplicate — you can still submit
+              <AlertTriangle size={12} />Existing student detected — review duplicates
             </p>
           )}
         </div>
       </form>
 
       <Dialog open={showDupDialog} onOpenChange={setShowDupDialog}>
-        <DialogContent>
+        <DialogContent className="max-w-lg">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <AlertTriangle className="text-amber-500" size={18} />
-              Duplicate Lead Found
+              Student Already Exists
             </DialogTitle>
           </DialogHeader>
+
+          <p className="text-sm text-gray-500 -mt-1">
+            This phone number matches {duplicates.length} existing record{duplicates.length > 1 ? "s" : ""}. What would you like to do?
+          </p>
+
+          {/* Existing records */}
+          <div className="space-y-2 max-h-52 overflow-y-auto">
+            {duplicates.map((dup) => {
+              const typeLabel = LEAD_TYPE_LABELS[dup.leadType] ?? dup.leadType;
+              const typeCfg = LEAD_TYPES.find((t) => t.value === dup.leadType);
+              return (
+                <div key={dup.id} className="bg-gray-50 border border-gray-200 rounded-xl p-3 text-sm flex items-start justify-between gap-3">
+                  <div className="space-y-0.5">
+                    <div className="flex items-center gap-2">
+                      <span className="font-semibold text-gray-800">{dup.studentName}</span>
+                      <span className={cn("text-[10px] font-bold px-1.5 py-0.5 rounded-full", typeCfg ? `${typeCfg.activeBg} text-white` : "bg-gray-200 text-gray-600")}>
+                        {typeLabel}
+                      </span>
+                    </div>
+                    <div className="text-xs text-gray-500 flex items-center gap-3">
+                      <span>{dup.phone}</span>
+                      <span>{dup.status.replace(/_/g, " ")}</span>
+                      {dup.country && <span>{dup.country.name}</span>}
+                    </div>
+                  </div>
+                  <Link href={`/leads/${dup.id}`} target="_blank" className="text-gray-400 hover:text-indigo-500 transition-colors flex-shrink-0 mt-0.5" title="Open lead">
+                    <ExternalLink size={14} />
+                  </Link>
+                </div>
+              );
+            })}
+          </div>
+
+          {/* Enroll in class options */}
           {duplicate && (
-            <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 space-y-2 text-sm">
-              <div className="flex justify-between"><span className="text-gray-500">Name</span><span className="font-medium">{duplicate.studentName}</span></div>
-              <div className="flex justify-between"><span className="text-gray-500">Phone</span><span className="font-medium">{duplicate.phone}</span></div>
-              <div className="flex justify-between"><span className="text-gray-500">Country</span><span className="font-medium">{duplicate.country.name}</span></div>
-              <div className="flex justify-between"><span className="text-gray-500">Status</span><span className="font-medium">{duplicate.status}</span></div>
-              {duplicate.assignedCounsellor && (
-                <div className="flex justify-between"><span className="text-gray-500">Counsellor</span><span className="font-medium">{duplicate.assignedCounsellor.name}</span></div>
-              )}
+            <div className="border-t border-gray-100 pt-3 space-y-2">
+              <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Enroll existing student in a class</p>
+              <div className="flex flex-col sm:flex-row gap-2">
+                {!duplicates.some((d) => d.leadType === "IELTS_CLASS") && (
+                  <Button
+                    variant="outline"
+                    className="flex-1 gap-2 border-violet-200 text-violet-700 hover:bg-violet-50"
+                    onClick={() => prefillAsClassLead("IELTS_CLASS", duplicate)}
+                  >
+                    <Plus size={14} />IELTS Class Lead
+                  </Button>
+                )}
+                {!duplicates.some((d) => d.leadType === "PTE_CLASS") && (
+                  <Button
+                    variant="outline"
+                    className="flex-1 gap-2 border-orange-200 text-orange-700 hover:bg-orange-50"
+                    onClick={() => prefillAsClassLead("PTE_CLASS", duplicate)}
+                  >
+                    <Plus size={14} />PTE Class Lead
+                  </Button>
+                )}
+              </div>
             </div>
           )}
-          <DialogFooter className="flex-col sm:flex-row gap-2">
-            <Link href={duplicate ? `/leads/${duplicate.id}` : "#"}>
-              <Button variant="outline" className="w-full sm:w-auto">Open Existing Lead</Button>
-            </Link>
+
+          <DialogFooter className="flex-col sm:flex-row gap-2 pt-1">
+            <Button variant="ghost" onClick={() => setShowDupDialog(false)} className="w-full sm:w-auto">
+              Cancel
+            </Button>
             <Button
+              variant="outline"
               onClick={() => { setShowDupDialog(false); setForceCreate(true); handleSubmit((data) => submitLead(data, true))(); }}
-              variant="destructive"
             >
-              Create Anyway
+              Create as New Record Anyway
             </Button>
           </DialogFooter>
         </DialogContent>

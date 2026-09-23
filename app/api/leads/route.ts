@@ -33,8 +33,8 @@ export async function GET(request: NextRequest) {
 
   // Duplicate check shortcut
   if (phone) {
-    const dup = await checkDuplicate(phone);
-    return NextResponse.json({ duplicate: dup });
+    const duplicates = await checkDuplicate(phone);
+    return NextResponse.json({ duplicates, duplicate: duplicates[0] ?? null });
   }
 
   const classLeads = searchParams.get("classLeads");

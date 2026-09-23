@@ -19,7 +19,7 @@ export async function getNextLeadSequence(): Promise<number> {
 
 export async function checkDuplicate(phone: string, excludeId?: string) {
   const normalized = phone.replace(/\s/g, "");
-  const lead = await prisma.lead.findFirst({
+  const leads = await prisma.lead.findMany({
     where: {
       phone: { contains: normalized },
       isArchived: false,
@@ -28,10 +28,11 @@ export async function checkDuplicate(phone: string, excludeId?: string) {
     include: {
       country: { select: { name: true } },
       assignedCounsellor: { select: { name: true } },
-      source: { select: { name: true } },
+      source: { select: { id: true, name: true } },
     },
+    orderBy: { createdAt: "asc" },
   });
-  return lead;
+  return leads;
 }
 
 export async function createLead(data: CreateLeadInput, createdById: string, teacherId?: string) {
