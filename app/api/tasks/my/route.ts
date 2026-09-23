@@ -15,18 +15,36 @@ export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url);
   const statusFilter = searchParams.get("status") || "";
 
-  const tasks = await prisma.leadTask.findMany({
-    where: {
-      assignedToId: session.userId,
-      ...(statusFilter ? { status: statusFilter as never } : { status: { not: "DONE" } }),
-    },
-    include: {
-      lead: { select: { id: true, leadId: true, studentName: true, phone: true } },
-      createdBy: { select: { id: true, name: true } },
-    },
-    orderBy: [{ priority: "desc" }, { dueDate: "asc" }, { createdAt: "desc" }],
-    take: 20,
-  });
+  const taskSelect = {
+    lead: { select: { id: true, leadId: true, studentName: true, phone: true } },
+    createdBy: { select: { id: true, name: true } },
+    assignedTo: { select: { id: true, name: true } },
+  };
 
-  return NextResponse.json({ tasks });
+  // Tasks assigned to me
+  const [tasks, assignedOut] = await Promise.all([
+    prisma.leadTask.findMany({
+      where: {
+        assignedToId: session.userId,
+        ...(statusFilter ? { status: statusFilter as never } : { status: { not: "DONE" } }),
+      },
+      include: taskSelect,
+      orderBy: [{ priority: "desc" }, { dueDate: "asc" }, { createdAt: "desc" }],
+      take: 20,
+    }),
+    // Tasks I created and assigned to others (so I can track completion)
+    (session.role === "ADMIN" || session.role === "COUNSELLOR")
+      ? prisma.leadTask.findMany({
+          where: {
+            createdById: session.userId,
+            assignedToId: { not: session.userId },
+          },
+          include: taskSelect,
+          orderBy: [{ status: "asc" }, { createdAt: "desc" }],
+          take: 30,
+        })
+      : Promise.resolve([]),
+  ]);
+
+  return NextResponse.json({ tasks, assignedOut });
 }
