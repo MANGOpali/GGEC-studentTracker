@@ -7,14 +7,17 @@ import { format } from "date-fns";
 import { notifyAdmins } from "@/services/notificationService";
 
 export async function getNextLeadSequence(): Promise<number> {
-  const latest = await prisma.lead.findFirst({
-    orderBy: { createdAt: "desc" },
+  const year = new Date().getFullYear();
+  const leads = await prisma.lead.findMany({
+    where: { leadId: { startsWith: `GG-${year}-` } },
     select: { leadId: true },
   });
-  if (!latest) return 1;
-  const match = latest.leadId.match(/GG-\d{4}-(\d+)/);
-  if (!match) return 1;
-  return parseInt(match[1]) + 1;
+  let max = 0;
+  for (const { leadId } of leads) {
+    const match = leadId.match(/GG-\d{4}-(\d+)/);
+    if (match) max = Math.max(max, parseInt(match[1]));
+  }
+  return max + 1;
 }
 
 export async function checkDuplicate(phone: string, excludeId?: string) {
