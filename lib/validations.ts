@@ -82,7 +82,7 @@ export const createUserSchema = z.object({
   email: z.string().email(),
   password: z.string().min(8, "Password must be at least 8 characters"),
   name: z.string().min(2),
-  role: z.enum(["ADMIN", "COUNSELLOR", "RECEPTIONIST"]),
+  role: z.enum(["ADMIN", "COUNSELLOR", "RECEPTIONIST", "TEACHER"]),
   phone: z.string().optional(),
   branchId: z.string().optional(),
 });
