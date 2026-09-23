@@ -8,7 +8,6 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Loader2, Eye, EyeOff } from "lucide-react";
-import Image from "next/image";
 
 export default function LoginPage() {
   const [error, setError] = useState("");
@@ -60,13 +59,8 @@ export default function LoginPage() {
         {/* Logo */}
         <div className="relative z-10">
           <div className="bg-white rounded-2xl px-6 py-3 inline-block shadow-lg">
-            <Image
-              src="/square-logo.jpg"
-              alt="Global Gate Educational Consultancy"
-              width={160}
-              height={160}
-              className="object-contain"
-            />
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src="/square-logo.jpg" alt="Global Gate Educational Consultancy" width={160} height={160} className="object-contain" />
           </div>
         </div>
 
@@ -101,13 +95,8 @@ export default function LoginPage() {
       <div className="flex-1 flex flex-col items-center justify-center bg-gray-50 p-6 sm:p-12">
         {/* Logo — always visible on right panel */}
         <div className="mb-8">
-          <Image
-            src="/square-logo.jpg"
-            alt="Global Gate Educational Consultancy"
-            width={160}
-            height={160}
-            className="object-contain"
-          />
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src="/square-logo.jpg" alt="Global Gate Educational Consultancy" width={160} height={160} className="object-contain" />
         </div>
 
         <div className="w-full max-w-[400px]">
