@@ -8,7 +8,7 @@ import {
   ArrowLeft, Calendar, MessageSquare, CheckCircle, AlertCircle, Pencil,
   Phone, Mail, GraduationCap, Globe, BookOpen, User, Building2, Zap,
   Clock, UserCheck, MapPin, Tag, FileText, MoreHorizontal, GraduationCap as TeacherIcon,
-  DollarSign
+  DollarSign, Loader2
 } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
@@ -132,11 +132,13 @@ export default function LeadDetailClient({ id }: { id: string }) {
   const [showNoteDialog,     setShowNoteDialog]     = useState(false);
   const [showFollowUpDialog, setShowFollowUpDialog] = useState(false);
   const [showEditDialog,     setShowEditDialog]     = useState(false);
+  const [showAddProgramDialog, setShowAddProgramDialog] = useState(false);
   const [newStatus,     setNewStatus]     = useState("");
   const [note,          setNote]          = useState("");
   const [followUpDate,  setFollowUpDate]  = useState("");
   const [followUpNotes, setFollowUpNotes] = useState("");
   const [saving,        setSaving]        = useState(false);
+  const [addingProgram, setAddingProgram] = useState(false);
   const [editFields,    setEditFields]    = useState<Record<string, string>>({});
 
   if (isLoading || !lead) return <LeadDetailSkeleton />;
@@ -146,6 +148,7 @@ export default function LeadDetailClient({ id }: { id: string }) {
 
   function openEdit() {
     setEditFields({
+      leadType: lead!.leadType,
       studentName: lead!.studentName, phone: lead!.phone, email: lead!.email || "",
       educationLevel: lead!.educationLevel, countryId: lead!.country?.id || "",
       course: lead!.course || "", intakeId: lead!.intake?.id || "",
@@ -155,6 +158,34 @@ export default function LeadDetailClient({ id }: { id: string }) {
       notes: lead!.notes || "", bookingDate: lead!.bookingDate ? lead!.bookingDate.slice(0, 10) : "",
     });
     setShowEditDialog(true);
+  }
+
+  async function addToProgram(type: string) {
+    setAddingProgram(true);
+    try {
+      const res = await fetch("/api/leads", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          leadType: type,
+          studentName: lead!.studentName,
+          phone: lead!.phone,
+          email: lead!.email || undefined,
+          educationLevel: lead!.educationLevel,
+          sourceId: lead!.source.id,
+          branchId: lead!.branch?.id || undefined,
+          notes: `Linked from ${lead!.leadId}`,
+        }),
+      });
+      const json = await res.json();
+      if (res.ok) {
+        setShowAddProgramDialog(false);
+        toast({ title: "New lead created", description: `${LEAD_TYPE_LABELS[type] ?? type} lead created — ${json.lead.leadId}` });
+        router.push(`/leads/${json.lead.id}`);
+      } else {
+        toast({ variant: "destructive", title: "Error", description: json.error || "Failed to create lead" });
+      }
+    } finally { setAddingProgram(false); }
   }
 
   async function saveEdit() {
@@ -232,6 +263,9 @@ export default function LeadDetailClient({ id }: { id: string }) {
             </Button>
             <Button variant="outline" size="sm" onClick={() => { setNote(""); setShowNoteDialog(true); }} className="gap-1.5">
               <MessageSquare size={13} />Note
+            </Button>
+            <Button variant="outline" size="sm" onClick={() => setShowAddProgramDialog(true)} className="gap-1.5 text-indigo-600 border-indigo-200 hover:bg-indigo-50">
+              <Zap size={13} />Add to Program
             </Button>
             <Button size="sm" onClick={() => { setNewStatus(lead.status); setShowStatusDialog(true); }} className="gap-1.5">
               <Zap size={13} />Status
@@ -480,6 +514,30 @@ export default function LeadDetailClient({ id }: { id: string }) {
         <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
           <DialogHeader><DialogTitle>Edit Lead</DialogTitle></DialogHeader>
           <div className="space-y-4">
+            {/* Lead Type */}
+            <div className="space-y-1.5">
+              <Label>Lead Type</Label>
+              <div className="flex gap-2 flex-wrap">
+                {(["STUDY_ABROAD", "IELTS_CLASS", "PTE_CLASS", "DATE_BOOKING"] as const).map((t) => (
+                  <button
+                    key={t}
+                    type="button"
+                    onClick={() => setEditFields((f) => ({ ...f, leadType: t }))}
+                    className={cn(
+                      "px-3 py-1.5 rounded-lg text-xs font-semibold border transition-all",
+                      editFields.leadType === t
+                        ? "bg-[#0E356B] text-white border-[#0E356B]"
+                        : "bg-white text-gray-600 border-gray-200 hover:border-gray-300"
+                    )}
+                  >
+                    {LEAD_TYPE_LABELS[t] ?? t}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div className="h-px bg-gray-100" />
+
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-1.5">
                 <Label>Student Name</Label>
@@ -503,13 +561,18 @@ export default function LeadDetailClient({ id }: { id: string }) {
                 </Select>
               </div>
             </div>
-            {lead.leadType === "STUDY_ABROAD" && (
+
+            {/* Study Abroad fields */}
+            {editFields.leadType === "STUDY_ABROAD" && (
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-1.5">
                   <Label>Interested Country</Label>
                   <Select value={editFields.countryId || ""} onValueChange={(v) => setEditFields((f) => ({ ...f, countryId: v }))}>
                     <SelectTrigger><SelectValue placeholder="Select country" /></SelectTrigger>
-                    <SelectContent>{refData?.countries?.map((c: { id: string; name: string }) => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}</SelectContent>
+                    <SelectContent>
+                      <SelectItem value="">None</SelectItem>
+                      {refData?.countries?.map((c: { id: string; name: string }) => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}
+                    </SelectContent>
                   </Select>
                 </div>
                 <div className="space-y-1.5">
@@ -518,25 +581,28 @@ export default function LeadDetailClient({ id }: { id: string }) {
                 </div>
               </div>
             )}
-            {lead.leadType === "DATE_BOOKING" && (
+            {editFields.leadType === "STUDY_ABROAD" && (
+              <div className="space-y-1.5">
+                <Label>Intake</Label>
+                <Select value={editFields.intakeId || ""} onValueChange={(v) => setEditFields((f) => ({ ...f, intakeId: v }))}>
+                  <SelectTrigger><SelectValue placeholder="Select intake" /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="">None</SelectItem>
+                    {refData?.intakes?.map((i: { id: string; name: string }) => <SelectItem key={i.id} value={i.id}>{i.name}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
+
+            {/* Date Booking field */}
+            {editFields.leadType === "DATE_BOOKING" && (
               <div className="space-y-1.5">
                 <Label>Test Booking Date</Label>
                 <Input type="date" value={editFields.bookingDate || ""} onChange={(e) => setEditFields((f) => ({ ...f, bookingDate: e.target.value }))} />
               </div>
             )}
+
             <div className="grid grid-cols-2 gap-4">
-              {lead.leadType === "STUDY_ABROAD" && (
-                <div className="space-y-1.5">
-                  <Label>Intake</Label>
-                  <Select value={editFields.intakeId || ""} onValueChange={(v) => setEditFields((f) => ({ ...f, intakeId: v }))}>
-                    <SelectTrigger><SelectValue placeholder="Select intake" /></SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="">None</SelectItem>
-                      {refData?.intakes?.map((i: { id: string; name: string }) => <SelectItem key={i.id} value={i.id}>{i.name}</SelectItem>)}
-                    </SelectContent>
-                  </Select>
-                </div>
-              )}
               <div className="space-y-1.5">
                 <Label>Branch</Label>
                 <Select value={editFields.branchId || ""} onValueChange={(v) => setEditFields((f) => ({ ...f, branchId: v }))}>
@@ -589,6 +655,44 @@ export default function LeadDetailClient({ id }: { id: string }) {
             <Button variant="outline" onClick={() => setShowEditDialog(false)}>Cancel</Button>
             <Button onClick={saveEdit} disabled={saving}>Save Changes</Button>
           </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Add to Program */}
+      <Dialog open={showAddProgramDialog} onOpenChange={setShowAddProgramDialog}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle>Add to Another Program</DialogTitle>
+          </DialogHeader>
+          <p className="text-sm text-gray-500 -mt-1">
+            Creates a new linked lead for <span className="font-semibold text-gray-700">{lead.studentName}</span> with their details pre-filled.
+          </p>
+          <div className="grid grid-cols-2 gap-3 pt-1">
+            {(["STUDY_ABROAD", "IELTS_CLASS", "PTE_CLASS", "DATE_BOOKING"] as const)
+              .filter((t) => t !== lead.leadType)
+              .map((type) => {
+                const cfg = TYPE_CONFIG[type] ?? { light: "bg-gray-50", text: "text-gray-600" };
+                return (
+                  <button
+                    key={type}
+                    onClick={() => addToProgram(type)}
+                    disabled={addingProgram}
+                    className={cn(
+                      "rounded-xl border-2 p-4 text-center transition-all hover:border-current hover:shadow-sm disabled:opacity-50",
+                      cfg.light, cfg.text, "border-transparent"
+                    )}
+                  >
+                    <p className="text-sm font-semibold">{LEAD_TYPE_LABELS[type] ?? type}</p>
+                    <p className="text-[10px] mt-0.5 opacity-60">New lead</p>
+                  </button>
+                );
+              })}
+          </div>
+          {addingProgram && (
+            <div className="flex items-center justify-center gap-2 text-sm text-gray-500">
+              <Loader2 size={14} className="animate-spin" />Creating lead…
+            </div>
+          )}
         </DialogContent>
       </Dialog>
 

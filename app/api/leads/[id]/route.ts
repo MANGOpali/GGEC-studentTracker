@@ -111,6 +111,7 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
 
     const { bookingDate, leadType, ...restFields } = rest;
     const updateData: Record<string, unknown> = { ...restFields };
+    if (leadType) updateData.leadType = leadType;
     if (newStatus) updateData.status = newStatus;
     if (nextFollowUpAt) updateData.nextFollowUpAt = new Date(nextFollowUpAt);
     if (followUpNotes !== undefined) updateData.followUpNotes = followUpNotes;
