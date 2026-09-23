@@ -7,7 +7,8 @@ import Link from "next/link";
 import {
   ArrowLeft, Calendar, MessageSquare, CheckCircle, AlertCircle, Pencil,
   Phone, Mail, GraduationCap, Globe, BookOpen, User, Building2, Zap,
-  Clock, UserCheck, MapPin, Tag, FileText, MoreHorizontal, GraduationCap as TeacherIcon
+  Clock, UserCheck, MapPin, Tag, FileText, MoreHorizontal, GraduationCap as TeacherIcon,
+  DollarSign
 } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
@@ -17,6 +18,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import StatusBadge from "@/components/leads/StatusBadge";
+import FeeSection from "@/components/leads/FeeSection";
 import { formatDate, formatDateTime, formatRelative, STATUS_LABELS, LEAD_TYPE_LABELS, LEAD_TYPE_COLORS, STATUSES_BY_TYPE, EDUCATION_LEVELS } from "@/lib/utils";
 import { cn } from "@/lib/utils";
 import { useToast } from "@/components/ui/use-toast";
@@ -117,6 +119,13 @@ export default function LeadDetailClient({ id }: { id: string }) {
     queryFn: () => fetch("/api/reference").then((r) => r.json()),
     staleTime: 10 * 60_000,
   });
+
+  const { data: meData } = useQuery({
+    queryKey: ["me"],
+    queryFn: () => fetch("/api/auth/me").then((r) => r.json()),
+    staleTime: 5 * 60_000,
+  });
+  const myRole: string = meData?.user?.role ?? "";
 
   const [showStatusDialog,   setShowStatusDialog]   = useState(false);
   const [showNoteDialog,     setShowNoteDialog]     = useState(false);
@@ -441,6 +450,21 @@ export default function LeadDetailClient({ id }: { id: string }) {
               </Button>
             </div>
           </div>
+
+          {/* Fee & Payments */}
+          {(lead.leadType === "IELTS_CLASS" || lead.leadType === "PTE_CLASS") && (
+            <div className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
+              <div className="px-5 py-4 border-b border-gray-100 flex items-center gap-2">
+                <div className="w-6 h-6 rounded-lg bg-emerald-50 flex items-center justify-center">
+                  <DollarSign size={13} className="text-emerald-500" />
+                </div>
+                <span className="text-sm font-semibold text-gray-700">Fees & Payments</span>
+              </div>
+              <div className="px-5 py-4">
+                <FeeSection leadId={lead.id} role={myRole} />
+              </div>
+            </div>
+          )}
 
         </div>
       </div>

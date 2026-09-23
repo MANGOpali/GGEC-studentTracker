@@ -1,7 +1,7 @@
 "use client";
 
 import { useQuery } from "@tanstack/react-query";
-import { Users, BookOpen, CheckCircle, UserX } from "lucide-react";
+import { Users, BookOpen, CheckCircle, UserX, ClipboardList } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
@@ -88,11 +88,11 @@ export default function TeacherDashboardClient({ userName }: { userName: string 
             <p className="text-sm text-gray-500 mt-1">Manage &amp; update status</p>
           </div>
         </Link>
-        <Link href="/teacher/leads/new">
-          <div className="bg-white border-2 border-dashed border-gray-200 rounded-2xl p-6 text-center hover:border-gray-400 hover:bg-gray-50 transition-colors cursor-pointer">
-            <BookOpen className="w-9 h-9 text-gray-400 mx-auto mb-2" />
-            <p className="font-semibold text-gray-800">Add Lead</p>
-            <p className="text-sm text-gray-500 mt-1">Capture new student</p>
+        <Link href="/teacher/attendance">
+          <div className="bg-white border-2 border-dashed border-violet-200 rounded-2xl p-6 text-center hover:border-violet-400 hover:bg-violet-50/40 transition-colors cursor-pointer">
+            <ClipboardList className="w-9 h-9 text-violet-500 mx-auto mb-2" />
+            <p className="font-semibold text-gray-800">Attendance</p>
+            <p className="text-sm text-gray-500 mt-1">Mark daily attendance</p>
           </div>
         </Link>
       </div>

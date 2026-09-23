@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { LayoutDashboard, UserPlus, BookOpen, Users, LogOut, Menu, X } from "lucide-react";
+import { LayoutDashboard, UserPlus, BookOpen, Users, ClipboardList, LogOut, Menu, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import NotificationBell from "./NotificationBell";
 import Image from "next/image";
@@ -13,6 +13,7 @@ const navItems = [
   { href: "/leads/new", label: "Add Lead", icon: UserPlus },
   { href: "/reception/leads", label: "My Leads", icon: BookOpen },
   { href: "/reception/students", label: "Students", icon: Users },
+  { href: "/reception/attendance", label: "Attendance", icon: ClipboardList },
 ];
 
 export default function ReceptionLayout({
@@ -50,7 +51,7 @@ export default function ReceptionLayout({
             {navItems.map((item) => {
               const active = pendingHref
                 ? pendingHref === item.href
-                : (pathname === item.href || (item.href !== "/reception/dashboard" && item.href !== "/leads/new" && item.href !== "/reception/students" && pathname.startsWith(item.href)));
+                : (pathname === item.href || (item.href !== "/reception/dashboard" && item.href !== "/leads/new" && item.href !== "/reception/students" && item.href !== "/reception/attendance" && pathname.startsWith(item.href)));
               return (
                 <Link key={item.href} href={item.href} onClick={() => setPendingHref(item.href)}
                   className={cn(

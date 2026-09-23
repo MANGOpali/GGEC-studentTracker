@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { LayoutDashboard, Users, UserPlus, LogOut, Menu, X } from "lucide-react";
+import { LayoutDashboard, Users, UserPlus, ClipboardList, LogOut, Menu, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import NotificationBell from "./NotificationBell";
 import Image from "next/image";
@@ -11,6 +11,7 @@ import Image from "next/image";
 const navItems = [
   { href: "/teacher/dashboard", label: "Dashboard", icon: LayoutDashboard },
   { href: "/teacher/students", label: "My Students", icon: Users },
+  { href: "/teacher/attendance", label: "Attendance", icon: ClipboardList },
   { href: "/teacher/leads/new", label: "Add Lead", icon: UserPlus },
 ];
 
@@ -49,7 +50,7 @@ export default function TeacherLayout({
             {navItems.map((item) => {
               const active = pendingHref
                 ? pendingHref === item.href
-                : (pathname === item.href || (item.href !== "/teacher/dashboard" && item.href !== "/teacher/leads/new" && pathname.startsWith(item.href)));
+                : (pathname === item.href || (item.href !== "/teacher/dashboard" && item.href !== "/teacher/leads/new" && item.href !== "/teacher/attendance" && pathname.startsWith(item.href)));
               return (
                 <Link key={item.href} href={item.href} onClick={() => setPendingHref(item.href)}
                   className={cn(
@@ -85,7 +86,7 @@ export default function TeacherLayout({
         {mobileOpen && (
           <div className="lg:hidden border-t border-gray-100 bg-white px-4 py-3 space-y-1 shadow-md">
             {navItems.map((item) => {
-              const active = pathname === item.href || (item.href !== "/teacher/dashboard" && item.href !== "/teacher/leads/new" && pathname.startsWith(item.href));
+              const active = pathname === item.href || (item.href !== "/teacher/dashboard" && item.href !== "/teacher/leads/new" && item.href !== "/teacher/attendance" && pathname.startsWith(item.href));
               return (
                 <Link key={item.href} href={item.href} onClick={() => { setPendingHref(item.href); setMobileOpen(false); }}
                   className={cn("flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-colors",

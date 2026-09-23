@@ -66,6 +66,21 @@ enum StudentStatus {
   DROPPED
 }
 
+enum PaymentMethod {
+  CASH
+  BANK_TRANSFER
+  CARD
+  ONLINE
+  OTHER
+}
+
+enum AttendanceStatus {
+  PRESENT
+  ABSENT
+  LATE
+  EXCUSED
+}
+
 enum ActivityType {
   CREATE_LEAD
   UPDATE_LEAD
@@ -109,7 +124,8 @@ model Shift {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  leads Lead[]
+  leads       Lead[]
+  attendance  Attendance[]
 
   @@index([branchId])
   @@index([isActive])
@@ -133,6 +149,9 @@ model User {
   teachingLeads Lead[]         @relation("TeacherLeads")
   activities    LeadActivity[]
   notifications Notification[]
+  feeRecords    FeeRecord[]    @relation("FeeCreatedBy")
+  payments      Payment[]      @relation("PaymentRecordedBy")
+  attendance    Attendance[]   @relation("AttendanceMarkedBy")
 }
 
 model LeadSource {
@@ -216,8 +235,10 @@ model Lead {
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
-  activities LeadActivity[]
-  syncLogs   SyncLog[]
+  activities  LeadActivity[]
+  syncLogs    SyncLog[]
+  feeRecord   FeeRecord?
+  attendance  Attendance[]
 
   @@index([phone])
   @@index([leadId])
@@ -232,6 +253,59 @@ model Lead {
   @@index([studentStatus])
   @@index([createdAt])
   @@index([isArchived])
+}
+
+model FeeRecord {
+  id          String    @id @default(cuid())
+  leadId      String    @unique
+  lead        Lead      @relation(fields: [leadId], references: [id])
+  totalFee    Float
+  discount    Float     @default(0)
+  notes       String?
+  createdById String
+  createdBy   User      @relation("FeeCreatedBy", fields: [createdById], references: [id])
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  payments Payment[]
+
+  @@index([leadId])
+}
+
+model Payment {
+  id           String        @id @default(cuid())
+  feeRecordId  String
+  feeRecord    FeeRecord     @relation(fields: [feeRecordId], references: [id])
+  amount       Float
+  method       PaymentMethod @default(CASH)
+  reference    String?
+  paidAt       DateTime      @default(now())
+  notes        String?
+  recordedById String
+  recordedBy   User          @relation("PaymentRecordedBy", fields: [recordedById], references: [id])
+  createdAt    DateTime      @default(now())
+
+  @@index([feeRecordId])
+  @@index([paidAt])
+}
+
+model Attendance {
+  id         String           @id @default(cuid())
+  leadId     String
+  lead       Lead             @relation(fields: [leadId], references: [id])
+  shiftId    String
+  shift      Shift            @relation(fields: [shiftId], references: [id])
+  date       DateTime         @db.Date
+  status     AttendanceStatus @default(PRESENT)
+  notes      String?
+  markedById String
+  markedBy   User             @relation("AttendanceMarkedBy", fields: [markedById], references: [id])
+  createdAt  DateTime         @default(now())
+
+  @@unique([leadId, shiftId, date])
+  @@index([leadId])
+  @@index([shiftId])
+  @@index([date])
 }
 
 model LeadActivity {
