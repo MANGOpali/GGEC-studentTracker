@@ -2,7 +2,8 @@
 
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import Link from "next/link";
-import { CheckSquare, Clock, AlertCircle, Check, ExternalLink } from "lucide-react";
+import { CheckSquare, ExternalLink } from "lucide-react";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
 
 interface MyTask {
@@ -21,16 +22,10 @@ const PRIORITY_DOT: Record<string, string> = {
   LOW:    "bg-gray-300",
 };
 
-const STATUS_ICON: Record<string, React.ElementType> = {
-  PENDING:     Clock,
-  IN_PROGRESS: AlertCircle,
-  DONE:        Check,
-};
-
 const STATUS_CLS: Record<string, string> = {
-  PENDING:     "text-amber-500",
-  IN_PROGRESS: "text-blue-500",
-  DONE:        "text-green-500",
+  PENDING:     "bg-amber-100 text-amber-700",
+  IN_PROGRESS: "bg-blue-100 text-blue-700",
+  DONE:        "bg-green-100 text-green-700",
 };
 
 function formatDate(d: string) {
@@ -48,11 +43,11 @@ export default function MyTasksWidget() {
 
   const tasks = data?.tasks ?? [];
 
-  async function markDone(taskId: string) {
+  async function updateStatus(taskId: string, status: string) {
     await fetch(`/api/tasks/${taskId}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ status: "DONE" }),
+      body: JSON.stringify({ status }),
     });
     qc.invalidateQueries({ queryKey: ["my-tasks"] });
   }
@@ -84,29 +79,32 @@ export default function MyTasksWidget() {
 
       <div className="divide-y divide-gray-50">
         {tasks.map((task) => {
-          const StatusIcon = STATUS_ICON[task.status];
-          const isOverdue = task.dueDate && task.status !== "DONE" && new Date(task.dueDate) < new Date();
+          const isOverdue = task.dueDate && new Date(task.dueDate) < new Date();
 
           return (
             <div key={task.id} className="px-5 py-3 flex items-start gap-3">
-              <button
-                onClick={() => markDone(task.id)}
-                title="Mark as done"
-                className={cn("mt-0.5 flex-shrink-0 transition-colors hover:opacity-70", STATUS_CLS[task.status])}
-              >
-                <StatusIcon size={15} />
-              </button>
-
               <div className="flex-1 min-w-0">
                 <div className="flex items-start justify-between gap-2">
                   <p className="text-sm font-medium text-gray-800 leading-snug">{task.title}</p>
-                  <Link
-                    href={`/leads/${task.lead.id}`}
-                    className="text-gray-300 hover:text-indigo-500 transition-colors flex-shrink-0 mt-0.5"
-                    title="View student profile"
-                  >
-                    <ExternalLink size={13} />
-                  </Link>
+                  <div className="flex items-center gap-2 flex-shrink-0">
+                    <Select value={task.status} onValueChange={(v) => updateStatus(task.id, v)}>
+                      <SelectTrigger className={cn("h-6 text-[11px] font-semibold px-2 rounded-full border-0 gap-1 w-auto", STATUS_CLS[task.status])}>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="PENDING">Pending</SelectItem>
+                        <SelectItem value="IN_PROGRESS">In Progress</SelectItem>
+                        <SelectItem value="DONE">Done</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <Link
+                      href={`/leads/${task.lead.id}`}
+                      className="text-gray-300 hover:text-indigo-500 transition-colors"
+                      title="View student profile"
+                    >
+                      <ExternalLink size={13} />
+                    </Link>
+                  </div>
                 </div>
                 <div className="flex items-center gap-2 mt-1 flex-wrap">
                   <div className={cn("w-2 h-2 rounded-full flex-shrink-0", PRIORITY_DOT[task.priority])} />

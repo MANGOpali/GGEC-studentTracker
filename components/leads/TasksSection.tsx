@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { CheckSquare, Plus, Check, Clock, AlertCircle, Trash2, ChevronDown, ChevronUp, Loader2 } from "lucide-react";
+import { CheckSquare, Plus, Trash2, ChevronDown, ChevronUp, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -31,9 +31,9 @@ const PRIORITY_CONFIG = {
 };
 
 const STATUS_CONFIG = {
-  PENDING:     { label: "Pending",     cls: "bg-amber-100 text-amber-700",  icon: Clock },
-  IN_PROGRESS: { label: "In Progress", cls: "bg-blue-100 text-blue-700",    icon: AlertCircle },
-  DONE:        { label: "Done",        cls: "bg-green-100 text-green-700",  icon: Check },
+  PENDING:     { label: "Pending",     cls: "bg-amber-100 text-amber-700" },
+  IN_PROGRESS: { label: "In Progress", cls: "bg-blue-100 text-blue-700" },
+  DONE:        { label: "Done",        cls: "bg-green-100 text-green-700" },
 };
 
 function formatDate(d: string) {
@@ -255,36 +255,17 @@ function TaskRow({
 }) {
   const isAssignee = task.assignedTo.id === myUserId;
   const isCreator = task.createdBy.id === myUserId || myRole === "ADMIN";
+  const canChange = isAssignee || isCreator;
   const statusCfg = STATUS_CONFIG[task.status];
-  const StatusIcon = statusCfg.icon;
   const priorityCfg = PRIORITY_CONFIG[task.priority];
   const isDone = task.status === "DONE";
   const isOverdue = task.dueDate && !isDone && new Date(task.dueDate) < new Date();
 
   return (
     <div className={cn("px-5 py-3.5 flex items-start gap-3", isDone && "opacity-60")}>
-      {/* Status toggle */}
-      <button
-        onClick={() => {
-          if (!isAssignee && !isCreator) return;
-          if (task.status === "PENDING") onStatusChange("IN_PROGRESS");
-          else if (task.status === "IN_PROGRESS") onStatusChange("DONE");
-          else onStatusChange("PENDING");
-        }}
-        className={cn(
-          "w-5 h-5 rounded flex items-center justify-center flex-shrink-0 mt-0.5 transition-colors",
-          statusCfg.cls,
-          (isAssignee || isCreator) && "cursor-pointer hover:opacity-80",
-          !isAssignee && !isCreator && "cursor-default",
-        )}
-        title={isAssignee || isCreator ? `Mark as ${task.status === "DONE" ? "Pending" : task.status === "PENDING" ? "In Progress" : "Done"}` : ""}
-      >
-        <StatusIcon size={11} />
-      </button>
-
       <div className="flex-1 min-w-0">
         <div className="flex items-start justify-between gap-2">
-          <div>
+          <div className="flex-1 min-w-0">
             <p className={cn("text-sm font-medium text-gray-800 leading-snug", isDone && "line-through text-gray-500")}>
               {task.title}
             </p>
@@ -292,11 +273,29 @@ function TaskRow({
               <p className="text-xs text-gray-500 mt-0.5 line-clamp-2">{task.description}</p>
             )}
           </div>
-          {isCreator && !isDone && (
-            <button onClick={onDelete} className="text-gray-300 hover:text-red-400 transition-colors flex-shrink-0 mt-0.5">
-              <Trash2 size={13} />
-            </button>
-          )}
+          <div className="flex items-center gap-2 flex-shrink-0">
+            {canChange && !isDone ? (
+              <Select value={task.status} onValueChange={onStatusChange}>
+                <SelectTrigger className={cn("h-6 text-[11px] font-semibold px-2 rounded-full border-0 gap-1 w-auto", statusCfg.cls)}>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="PENDING">Pending</SelectItem>
+                  <SelectItem value="IN_PROGRESS">In Progress</SelectItem>
+                  <SelectItem value="DONE">Done</SelectItem>
+                </SelectContent>
+              </Select>
+            ) : (
+              <span className={cn("text-[11px] font-semibold px-2 py-0.5 rounded-full", statusCfg.cls)}>
+                {statusCfg.label}
+              </span>
+            )}
+            {isCreator && !isDone && (
+              <button onClick={onDelete} className="text-gray-300 hover:text-red-400 transition-colors">
+                <Trash2 size={13} />
+              </button>
+            )}
+          </div>
         </div>
         <div className="flex items-center gap-2 flex-wrap mt-1.5">
           <span className="text-xs text-gray-500">→ {task.assignedTo.name}</span>
