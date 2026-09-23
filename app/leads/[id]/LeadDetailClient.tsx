@@ -35,6 +35,7 @@ interface Lead {
   branch: { id: string; name: string } | null;
   assignedCounsellor: { id: string; name: string; email: string } | null;
   teacher: { id: string; name: string } | null;
+  shift: { id: string; name: string; startTime: string; endTime: string } | null;
   createdBy: { id: string; name: string };
   activities: Array<{
     id: string; action: string; metadata: Record<string, unknown> | null;
@@ -140,6 +141,7 @@ export default function LeadDetailClient({ id }: { id: string }) {
       course: lead!.course || "", intakeId: lead!.intake?.id || "",
       branchId: lead!.branch?.id || "", assignedCounsellorId: lead!.assignedCounsellor?.id || "",
       teacherId: lead!.teacher?.id || "",
+      shiftId: lead!.shift?.id || "",
       notes: lead!.notes || "", bookingDate: lead!.bookingDate ? lead!.bookingDate.slice(0, 10) : "",
     });
     setShowEditDialog(true);
@@ -382,6 +384,18 @@ export default function LeadDetailClient({ id }: { id: string }) {
                   }
                 />
               )}
+              {lead.shift && (
+                <InfoRow
+                  label="Shift"
+                  icon={Clock}
+                  value={
+                    <div>
+                      <span className="font-medium">{lead.shift.name}</span>
+                      <span className="text-xs text-gray-400 ml-1.5">{lead.shift.startTime}–{lead.shift.endTime}</span>
+                    </div>
+                  }
+                />
+              )}
               <InfoRow label="Created by" value={lead.createdBy.name} icon={User} />
               <InfoRow label="Added" value={formatDateTime(lead.createdAt)} icon={Clock} />
               {lead.referredBy && <InfoRow label="Referred by" value={lead.referredBy} icon={MapPin} />}
@@ -522,6 +536,18 @@ export default function LeadDetailClient({ id }: { id: string }) {
                   <SelectContent>
                     <SelectItem value="">No teacher</SelectItem>
                     {refData?.teachers?.map((t: { id: string; name: string }) => <SelectItem key={t.id} value={t.id}>{t.name}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-1.5">
+                <Label>Shift</Label>
+                <Select value={editFields.shiftId || ""} onValueChange={(v) => setEditFields((f) => ({ ...f, shiftId: v }))}>
+                  <SelectTrigger><SelectValue placeholder="No shift" /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="">No shift</SelectItem>
+                    {refData?.shifts?.map((s: { id: string; name: string; startTime: string; endTime: string }) => (
+                      <SelectItem key={s.id} value={s.id}>{s.name} ({s.startTime}–{s.endTime})</SelectItem>
+                    ))}
                   </SelectContent>
                 </Select>
               </div>
