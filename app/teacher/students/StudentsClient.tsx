@@ -1,15 +1,14 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { Search, X, ChevronLeft, ChevronRight, ArrowRight } from "lucide-react";
+import { Search, X, ChevronLeft, ChevronRight, Phone, Clock } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import StatusBadge from "@/components/leads/StatusBadge";
 import { Skeleton } from "@/components/ui/skeleton";
-import { formatDate, LEAD_TYPE_LABELS, LEAD_TYPE_COLORS, STATUS_LABELS } from "@/lib/utils";
+import { LEAD_TYPE_LABELS, LEAD_TYPE_COLORS } from "@/lib/utils";
 import { cn } from "@/lib/utils";
 
 interface Student {
@@ -22,50 +21,81 @@ interface Student {
   source: { name: string };
 }
 
-const CLASS_TYPE_COLORS: Record<string, string> = {
-  PHYSICAL: "bg-blue-100 text-blue-700",
-  ONLINE: "bg-purple-100 text-purple-700",
-  CRASH_COURSE: "bg-orange-100 text-orange-700",
+const STATUS_COLORS: Record<string, string> = {
+  TRIAL:    "bg-yellow-100 text-yellow-700 border-yellow-200",
+  ACTIVE:   "bg-green-100 text-green-700 border-green-200",
+  HOLD:     "bg-gray-100 text-gray-600 border-gray-200",
+  COMPLETE: "bg-blue-100 text-blue-700 border-blue-200",
+  DROPPED:  "bg-red-100 text-red-600 border-red-200",
 };
-const STUDENT_STATUS_COLORS: Record<string, string> = {
-  TRIAL: "bg-yellow-100 text-yellow-700",
-  ACTIVE: "bg-green-100 text-green-700",
-  HOLD: "bg-gray-100 text-gray-600",
-  COMPLETE: "bg-blue-100 text-blue-700",
-  DROPPED: "bg-red-100 text-red-600",
+const STATUS_LABELS: Record<string, string> = {
+  TRIAL: "Trial", ACTIVE: "Active", HOLD: "Hold", COMPLETE: "Complete", DROPPED: "Dropped",
 };
+const STATUS_OPTIONS = Object.entries(STATUS_LABELS).map(([value, label]) => ({ value, label }));
 
-const CLASS_STATUSES = ["NEW","CONTACTED","FOLLOW_UP","DEMO_SCHEDULED","DEMO_ATTENDED","IN_CLASS","COMPLETED","DROPPED","NOT_INTERESTED","NO_RESPONSE","CLOSED","CONFIRMED","RESCHEDULED","NO_SHOW"];
+function StatusPill({ value, onChange }: { value: string | null; onChange: (v: string) => void }) {
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    function h(e: MouseEvent) { if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false); }
+    if (open) document.addEventListener("mousedown", h);
+    return () => document.removeEventListener("mousedown", h);
+  }, [open]);
+  return (
+    <div ref={ref} className="relative">
+      <button
+        onClick={() => setOpen(!open)}
+        className={cn("text-[11px] font-medium px-2.5 py-1 rounded-full border transition-colors", value ? STATUS_COLORS[value] : "bg-gray-50 text-gray-400 border-dashed border-gray-300 hover:border-gray-400")}
+      >
+        {value ? STATUS_LABELS[value] : "Set status"}
+      </button>
+      {open && (
+        <div className="absolute right-0 top-full mt-1 z-50 bg-white border border-gray-200 rounded-xl shadow-lg py-1 min-w-[120px]">
+          <button onClick={() => { onChange(""); setOpen(false); }} className="w-full text-left px-3 py-1.5 text-xs text-gray-400 hover:bg-gray-50">Not set</button>
+          {STATUS_OPTIONS.map((opt) => (
+            <button key={opt.value} onClick={() => { onChange(opt.value); setOpen(false); }}
+              className={cn("w-full text-left px-3 py-1.5 text-xs hover:bg-gray-50", value === opt.value ? "font-semibold text-gray-900" : "text-gray-700")}>
+              {opt.label}
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
 
 export default function StudentsClient() {
   const queryClient = useQueryClient();
-  const [page, setPage]           = useState(1);
-  const [search, setSearch]       = useState("");
+  const [page, setPage] = useState(1);
+  const [search, setSearch] = useState("");
   const [debounced, setDebounced] = useState("");
-  const [status, setStatus]       = useState("");
+  const [studentStatusFilter, setStudentStatusFilter] = useState("");
+  const [shiftFilter, setShiftFilter] = useState("");
 
-  useEffect(() => {
-    const t = setTimeout(() => setDebounced(search), 400);
-    return () => clearTimeout(t);
-  }, [search]);
-
-  useEffect(() => { setPage(1); }, [debounced, status]);
+  useEffect(() => { const t = setTimeout(() => setDebounced(search), 400); return () => clearTimeout(t); }, [search]);
+  useEffect(() => { setPage(1); }, [debounced, studentStatusFilter, shiftFilter]);
 
   const params = new URLSearchParams({ page: String(page), pageSize: "20" });
   if (debounced) params.set("search", debounced);
-  if (status)    params.set("status", status);
+
+  const { data: refData } = useQuery({ queryKey: ["reference"], queryFn: () => fetch("/api/reference").then((r) => r.json()), staleTime: 600_000 });
 
   const { data, isLoading } = useQuery({
-    queryKey: ["teacher-students", page, debounced, status],
+    queryKey: ["teacher-students", page, debounced, studentStatusFilter, shiftFilter],
     queryFn: () => fetch(`/api/leads?${params}`).then((r) => r.json()),
     staleTime: 30_000,
     placeholderData: (prev) => prev,
   });
 
-  const students: Student[] = data?.data ?? [];
-  const total: number       = data?.total ?? 0;
-  const totalPages: number  = data?.totalPages ?? 1;
-  const hasFilters          = search || status;
+  const allStudents: Student[] = data?.data ?? [];
+  const students = allStudents.filter((s) => {
+    if (studentStatusFilter && s.studentStatus !== studentStatusFilter) return false;
+    if (shiftFilter && s.shift?.id !== shiftFilter) return false;
+    return true;
+  });
+  const total: number = data?.total ?? 0;
+  const totalPages: number = data?.totalPages ?? 1;
+  const hasFilters = search || studentStatusFilter || shiftFilter;
 
   async function updateField(leadId: string, field: string, value: string) {
     await fetch(`/api/leads/${leadId}`, {
@@ -81,122 +111,112 @@ export default function StudentsClient() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold text-gray-900">My Students</h1>
-          <p className="text-sm text-gray-500 mt-0.5">{total.toLocaleString()} students assigned to you</p>
+          <p className="text-sm text-gray-500 mt-0.5">{total} students assigned to you</p>
         </div>
         <Link href="/teacher/leads/new"><Button size="sm">+ Add Lead</Button></Link>
       </div>
 
-      <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-4 flex flex-wrap gap-2">
-        <div className="relative flex-1 min-w-48">
-          <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
-          <Input placeholder="Search name or phone…" value={search} onChange={(e) => setSearch(e.target.value)} className="pl-9 bg-gray-50" />
-          {search && <button onClick={() => setSearch("")} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"><X size={14} /></button>}
+      {/* Filters */}
+      <div className="flex flex-wrap gap-2 items-center">
+        <div className="relative flex-1 min-w-[200px]">
+          <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+          <Input placeholder="Search name or phone…" value={search} onChange={(e) => setSearch(e.target.value)} className="pl-8 h-9 text-sm bg-white" />
+          {search && <button onClick={() => setSearch("")} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"><X size={13} /></button>}
         </div>
-        <Select value={status} onValueChange={(v) => setStatus(v === "all" ? "" : v)}>
-          <SelectTrigger className="w-40 h-10 text-sm bg-gray-50"><SelectValue placeholder="All Statuses" /></SelectTrigger>
+        <Select value={studentStatusFilter} onValueChange={(v) => setStudentStatusFilter(v === "all" ? "" : v)}>
+          <SelectTrigger className="h-9 text-sm w-32 bg-white"><SelectValue placeholder="All Statuses" /></SelectTrigger>
           <SelectContent>
             <SelectItem value="all">All Statuses</SelectItem>
-            {CLASS_STATUSES.map((s) => <SelectItem key={s} value={s}>{STATUS_LABELS[s] ?? s}</SelectItem>)}
+            {STATUS_OPTIONS.map((o) => <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>)}
           </SelectContent>
         </Select>
-        {hasFilters && <Button variant="ghost" size="sm" onClick={() => { setSearch(""); setStatus(""); }} className="text-gray-500"><X size={14} />Clear</Button>}
+        <Select value={shiftFilter} onValueChange={(v) => setShiftFilter(v === "all" ? "" : v)}>
+          <SelectTrigger className="h-9 text-sm w-32 bg-white"><SelectValue placeholder="All Shifts" /></SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All Shifts</SelectItem>
+            {(refData?.shifts ?? []).map((s: { id: string; name: string }) => (
+              <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+        {hasFilters && (
+          <Button variant="ghost" size="sm" onClick={() => { setSearch(""); setStudentStatusFilter(""); setShiftFilter(""); }} className="text-gray-500 h-9">
+            <X size={13} className="mr-1" />Clear
+          </Button>
+        )}
       </div>
 
-      <div className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="border-b border-gray-100">
-                {["Lead ID", "Student", "Phone", "Type", "Mode", "Student Status", "Shift", "Status", "Added", ""].map((h) => (
-                  <th key={h} className={cn("px-5 py-3.5 text-xs font-semibold text-gray-400 uppercase tracking-wider", h === "" ? "" : "text-left")}>{h}</th>
-                ))}
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-50">
-              {isLoading ? (
-                Array.from({ length: 5 }).map((_, i) => (
-                  <tr key={i}>{Array.from({ length: 10 }).map((__, j) => <td key={j} className="px-5 py-3.5"><Skeleton className="h-4 w-full" /></td>)}</tr>
-                ))
-              ) : students.length === 0 ? (
-                <tr><td colSpan={10} className="text-center py-14 text-gray-400">
-                  <Search size={28} className="mx-auto mb-2 opacity-30" />
-                  <p className="font-medium">{hasFilters ? "No students match your filters" : "No students assigned yet"}</p>
-                </td></tr>
-              ) : (
-                students.map((s) => (
-                  <tr key={s.id} className="hover:bg-blue-50/40 transition-colors group">
-                    <td className="px-5 py-3.5">
-                      <span className="font-mono text-xs font-semibold text-blue-600 bg-blue-50 px-2 py-0.5 rounded-md">{s.leadId}</span>
-                    </td>
-                    <td className="px-5 py-3.5">
-                      <div className="font-semibold text-gray-900">{s.studentName}</div>
-                    </td>
-                    <td className="px-5 py-3.5 text-gray-500 text-sm">{s.phone}</td>
-                    <td className="px-5 py-3.5">
-                      <span className={cn("px-2.5 py-1 rounded-full text-xs font-medium", LEAD_TYPE_COLORS[s.leadType] ?? "bg-gray-100 text-gray-600")}>
-                        {LEAD_TYPE_LABELS[s.leadType] ?? s.leadType}
-                      </span>
-                    </td>
-                    <td className="px-5 py-3.5">
-                      <Select value={s.classType ?? ""} onValueChange={(v) => updateField(s.id, "classType", v)}>
-                        <SelectTrigger className={cn("h-7 w-32 text-xs", s.classType ? "border-0 font-medium " + (CLASS_TYPE_COLORS[s.classType] ?? "") : "border-dashed text-gray-400")}>
-                          <SelectValue placeholder="Set mode" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="">Not set</SelectItem>
-                          <SelectItem value="PHYSICAL">Physical</SelectItem>
-                          <SelectItem value="ONLINE">Online</SelectItem>
-                          <SelectItem value="CRASH_COURSE">Crash Course</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </td>
-                    <td className="px-5 py-3.5">
-                      <Select value={s.studentStatus ?? ""} onValueChange={(v) => updateField(s.id, "studentStatus", v)}>
-                        <SelectTrigger className={cn("h-7 w-28 text-xs", s.studentStatus ? "border-0 font-medium " + (STUDENT_STATUS_COLORS[s.studentStatus] ?? "") : "border-dashed text-gray-400")}>
-                          <SelectValue placeholder="Set status" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="">Not set</SelectItem>
-                          <SelectItem value="TRIAL">Trial</SelectItem>
-                          <SelectItem value="ACTIVE">Active</SelectItem>
-                          <SelectItem value="HOLD">Hold</SelectItem>
-                          <SelectItem value="COMPLETE">Complete</SelectItem>
-                          <SelectItem value="DROPPED">Dropped</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </td>
-                    <td className="px-5 py-3.5">
-                      {s.shift ? (
-                        <div>
-                          <div className="text-xs font-medium text-gray-700">{s.shift.name}</div>
-                          <div className="text-[10px] text-gray-400">{s.shift.startTime}–{s.shift.endTime}</div>
-                        </div>
-                      ) : <span className="text-gray-300 text-xs">—</span>}
-                    </td>
-                    <td className="px-5 py-3.5"><StatusBadge status={s.status} /></td>
-                    <td className="px-5 py-3.5 text-gray-400 text-xs whitespace-nowrap">{formatDate(s.createdAt)}</td>
-                    <td className="px-5 py-3.5">
-                      <Link href={`/leads/${s.id}`}>
-                        <button className="flex items-center gap-1 text-xs font-medium text-gray-400 group-hover:text-blue-600 transition-colors">
-                          View <ArrowRight size={13} className="group-hover:translate-x-0.5 transition-transform" />
-                        </button>
-                      </Link>
-                    </td>
-                  </tr>
-                ))
-              )}
-            </tbody>
-          </table>
-        </div>
+      {/* Card list */}
+      <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
+        {isLoading ? (
+          <div className="divide-y">
+            {Array.from({ length: 6 }).map((_, i) => (
+              <div key={i} className="flex items-center gap-3 px-4 py-3">
+                <Skeleton className="w-9 h-9 rounded-full flex-shrink-0" />
+                <div className="flex-1 space-y-1.5"><Skeleton className="h-3.5 w-40" /><Skeleton className="h-3 w-24" /></div>
+                <Skeleton className="h-6 w-16 rounded-full" />
+                <Skeleton className="h-3 w-24 hidden sm:block" />
+              </div>
+            ))}
+          </div>
+        ) : students.length === 0 ? (
+          <div className="text-center py-14 text-gray-400">
+            <Search size={28} className="mx-auto mb-2 opacity-30" />
+            <p className="text-sm font-medium">{hasFilters ? "No students match" : "No students assigned yet"}</p>
+          </div>
+        ) : (
+          <div className="divide-y divide-gray-100">
+            {students.map((s) => (
+              <div key={s.id} className="flex items-center gap-3 px-4 py-3 hover:bg-gray-50 transition-colors">
+                {/* Avatar */}
+                <div className="w-9 h-9 rounded-full bg-emerald-100 text-emerald-700 font-bold text-sm flex items-center justify-center flex-shrink-0">
+                  {s.studentName.charAt(0).toUpperCase()}
+                </div>
 
-        <div className="flex items-center justify-between px-5 py-3 border-t border-gray-100 bg-gray-50/50">
-          <span className="text-sm text-gray-500">
-            {total === 0 ? "0" : `${((page - 1) * 20 + 1)}–${Math.min(page * 20, total)}`} of {total}
+                {/* Name + meta */}
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-1.5 flex-wrap">
+                    <span className="font-semibold text-gray-900 text-sm">{s.studentName}</span>
+                    <span className="text-[10px] font-mono text-gray-400 bg-gray-100 px-1.5 py-0.5 rounded">{s.leadId}</span>
+                    <span className={cn("text-[10px] font-medium px-1.5 py-0.5 rounded-full", LEAD_TYPE_COLORS[s.leadType] ?? "bg-gray-100 text-gray-600")}>
+                      {LEAD_TYPE_LABELS[s.leadType] ?? s.leadType}
+                    </span>
+                  </div>
+                  {s.shift && (
+                    <div className="flex items-center gap-1 mt-0.5">
+                      <span className="text-[10px] text-gray-500 bg-gray-100 px-1.5 py-0.5 rounded flex items-center gap-1">
+                        <Clock size={9} />{s.shift.startTime}–{s.shift.endTime}
+                      </span>
+                    </div>
+                  )}
+                </div>
+
+                {/* Status pill */}
+                <StatusPill value={s.studentStatus} onChange={(v) => updateField(s.id, "studentStatus", v)} />
+
+                {/* Phone */}
+                <a href={`tel:${s.phone}`} className="hidden sm:flex items-center gap-1 text-xs text-blue-600 hover:text-blue-800 flex-shrink-0">
+                  <Phone size={12} />{s.phone}
+                </a>
+
+                {/* View */}
+                <Link href={`/leads/${s.id}`}>
+                  <Button variant="ghost" size="sm" className="h-7 text-xs text-gray-500 hover:text-blue-600 flex-shrink-0">View</Button>
+                </Link>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {/* Pagination */}
+        <div className="flex items-center justify-between px-4 py-3 border-t border-gray-100 bg-gray-50/50">
+          <span className="text-xs text-gray-500">
+            {total === 0 ? "0" : `${(page - 1) * 20 + 1}–${Math.min(page * 20, total)}`} of {total}
           </span>
           <div className="flex items-center gap-1">
-            <Button variant="outline" size="sm" className="h-8 w-8 p-0" disabled={page === 1} onClick={() => setPage((p) => p - 1)}><ChevronLeft size={15} /></Button>
-            <span className="text-sm text-gray-600 px-2">{page} / {totalPages}</span>
-            <Button variant="outline" size="sm" className="h-8 w-8 p-0" disabled={page >= totalPages} onClick={() => setPage((p) => p + 1)}><ChevronRight size={15} /></Button>
+            <Button variant="outline" size="sm" className="h-7 w-7 p-0" disabled={page === 1} onClick={() => setPage((p) => p - 1)}><ChevronLeft size={14} /></Button>
+            <span className="text-xs text-gray-500 px-2">{page} / {totalPages}</span>
+            <Button variant="outline" size="sm" className="h-7 w-7 p-0" disabled={page >= totalPages} onClick={() => setPage((p) => p + 1)}><ChevronRight size={14} /></Button>
           </div>
         </div>
       </div>
