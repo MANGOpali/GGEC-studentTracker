@@ -33,7 +33,7 @@ const STATUS_CONFIG: Record<AttendanceStatus, { label: string; bg: string; text:
   EXCUSED: { label: "Excused", bg: "bg-gray-100 border-gray-300 text-gray-600",    text: "text-gray-600",  icon: <AlertCircle size={14} /> },
 };
 
-export default function AttendanceClient() {
+export default function AttendanceClient({ hideTitle }: { hideTitle?: boolean } = {}) {
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
@@ -111,10 +111,12 @@ export default function AttendanceClient() {
 
   return (
     <div className="space-y-5">
-      <div>
-        <h1 className="text-2xl font-bold text-gray-900">Attendance</h1>
-        <p className="text-sm text-gray-500 mt-0.5">Mark daily attendance for students</p>
-      </div>
+      {!hideTitle && (
+        <div>
+          <h1 className="text-2xl font-bold text-gray-900">Attendance</h1>
+          <p className="text-sm text-gray-500 mt-0.5">Mark daily attendance for students</p>
+        </div>
+      )}
 
       {/* Controls */}
       <div className="bg-white rounded-xl border p-4 flex flex-wrap gap-4 items-end">

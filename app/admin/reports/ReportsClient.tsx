@@ -2,12 +2,14 @@
 
 import { useQuery } from "@tanstack/react-query";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip,
   ResponsiveContainer, Cell, Legend,
   PieChart, Pie,
 } from "recharts";
 import { TrendingUp, Users, Award, Target, Globe, Megaphone } from "lucide-react";
+import FeesReportSection from "@/components/reports/FeesReportSection";
 
 interface SourceStat {
   sourceName: string;
@@ -98,9 +100,22 @@ export default function ReportsClient() {
     <div className="space-y-6">
       {/* Header */}
       <div>
-        <h1 className="text-2xl font-bold text-gray-900">Source Analytics</h1>
-        <p className="text-sm text-gray-500 mt-0.5">Track where your leads come from and how they convert</p>
+        <h1 className="text-2xl font-bold text-gray-900">Reports</h1>
+        <p className="text-sm text-gray-500 mt-0.5">Analytics, source breakdown, and fee overview</p>
       </div>
+
+      <Tabs defaultValue="sources">
+        <TabsList>
+          <TabsTrigger value="sources">Source Analytics</TabsTrigger>
+          <TabsTrigger value="fees">Fees &amp; Payments</TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="fees" className="mt-6">
+          <FeesReportSection />
+        </TabsContent>
+
+        <TabsContent value="sources" className="mt-6">
+      <div className="space-y-6">
 
       {/* Summary KPIs */}
       {loading ? (
@@ -265,6 +280,9 @@ export default function ReportsClient() {
           </div>
         </div>
       </div>
+      </div>
+        </TabsContent>
+      </Tabs>
     </div>
   );
 }
