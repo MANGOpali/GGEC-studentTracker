@@ -8,7 +8,7 @@ import {
   ArrowLeft, Calendar, MessageSquare, CheckCircle, AlertCircle, Pencil,
   Phone, Mail, GraduationCap, Globe, BookOpen, User, Building2, Zap,
   Clock, UserCheck, MapPin, Tag, FileText, MoreHorizontal, GraduationCap as TeacherIcon,
-  DollarSign, Loader2
+  DollarSign, Loader2, Plus
 } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
@@ -78,6 +78,24 @@ function InfoRow({ label, value, icon: Icon }: { label: string; value: React.Rea
         <span className="text-xs font-medium">{label}</span>
       </div>
       <div className="text-sm font-medium text-gray-800 text-right">{value}</div>
+    </div>
+  );
+}
+
+function Field({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="py-2.5 border-b border-gray-50 last:border-0">
+      <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-wide mb-0.5">{label}</p>
+      <p className="text-sm text-gray-800 font-medium leading-snug">{value}</p>
+    </div>
+  );
+}
+
+function SideRow({ label, value }: { label: string; value: React.ReactNode }) {
+  return (
+    <div className="flex items-center justify-between gap-3 py-2">
+      <span className="text-xs text-gray-400 flex-shrink-0">{label}</span>
+      <span className="text-xs font-medium text-gray-700 text-right flex items-center gap-1">{value}</span>
     </div>
   );
 }
@@ -226,49 +244,45 @@ export default function LeadDetailClient({ id }: { id: string }) {
   return (
     <div className="max-w-5xl mx-auto space-y-5">
 
-      {/* Hero Header */}
+      {/* Header */}
       <div className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
-        <div className={cn("h-1", typeConfig.bar)} />
-        <div className="px-6 py-5 flex items-center justify-between gap-4 flex-wrap">
-          <div className="flex items-center gap-4">
-            <button onClick={() => router.back()} className="w-8 h-8 rounded-lg border border-gray-200 flex items-center justify-center text-gray-400 hover:text-gray-700 hover:bg-gray-50 transition-colors flex-shrink-0">
-              <ArrowLeft size={16} />
+        <div className={cn("h-0.5", typeConfig.bar)} />
+        <div className="px-5 py-4 flex items-center justify-between gap-3">
+          <div className="flex items-center gap-3 min-w-0">
+            <button onClick={() => router.back()} className="w-7 h-7 rounded-lg border border-gray-200 flex items-center justify-center text-gray-400 hover:text-gray-600 hover:bg-gray-50 transition-colors flex-shrink-0">
+              <ArrowLeft size={14} />
             </button>
-            <div className={cn("w-12 h-12 rounded-2xl flex items-center justify-center text-lg font-bold flex-shrink-0", typeConfig.light, typeConfig.text)}>
+            <div className={cn("w-9 h-9 rounded-xl flex items-center justify-center text-sm font-bold flex-shrink-0", typeConfig.light, typeConfig.text)}>
               {lead.studentName.charAt(0).toUpperCase()}
             </div>
-            <div>
+            <div className="min-w-0">
               <div className="flex items-center gap-2 flex-wrap">
-                <h1 className="text-xl font-bold text-gray-900">{lead.studentName}</h1>
+                <h1 className="text-base font-bold text-gray-900 leading-tight">{lead.studentName}</h1>
                 <StatusBadge status={lead.status} />
-                <span className={cn("px-2.5 py-0.5 rounded-full text-xs font-semibold", LEAD_TYPE_COLORS[lead.leadType] ?? "bg-gray-100 text-gray-600")}>
+                <span className={cn("px-2 py-0.5 rounded-full text-[10px] font-semibold", LEAD_TYPE_COLORS[lead.leadType] ?? "bg-gray-100 text-gray-600")}>
                   {LEAD_TYPE_LABELS[lead.leadType] ?? lead.leadType}
                 </span>
               </div>
-              <div className="flex items-center gap-3 mt-1">
-                <span className="font-mono text-xs font-semibold text-blue-600 bg-blue-50 px-2 py-0.5 rounded-md">{lead.leadId}</span>
+              <div className="flex items-center gap-2.5 mt-0.5 flex-wrap">
+                <span className="font-mono text-[11px] font-semibold text-blue-600 bg-blue-50 px-1.5 py-0.5 rounded">{lead.leadId}</span>
                 <span className="text-xs text-gray-400">{lead.phone}</span>
                 {lead.email && <span className="text-xs text-gray-400">{lead.email}</span>}
               </div>
             </div>
           </div>
 
-          {/* Actions */}
-          <div className="flex items-center gap-2 flex-wrap">
-            <Button variant="outline" size="sm" onClick={openEdit} className="gap-1.5">
-              <Pencil size={13} />Edit
+          <div className="flex items-center gap-1.5 flex-shrink-0">
+            <button onClick={() => { setNote(""); setShowNoteDialog(true); }} title="Add note" className="w-8 h-8 rounded-lg border border-gray-200 flex items-center justify-center text-gray-400 hover:text-gray-600 hover:bg-gray-50 transition-colors">
+              <MessageSquare size={14} />
+            </button>
+            <button onClick={() => setShowAddProgramDialog(true)} title="Add to program" className="w-8 h-8 rounded-lg border border-indigo-200 flex items-center justify-center text-indigo-400 hover:text-indigo-600 hover:bg-indigo-50 transition-colors">
+              <Plus size={14} />
+            </button>
+            <Button variant="outline" size="sm" onClick={openEdit} className="gap-1.5 h-8 text-xs px-3">
+              <Pencil size={12} />Edit
             </Button>
-            <Button variant="outline" size="sm" onClick={() => setShowFollowUpDialog(true)} className="gap-1.5">
-              <Calendar size={13} />Follow-up
-            </Button>
-            <Button variant="outline" size="sm" onClick={() => { setNote(""); setShowNoteDialog(true); }} className="gap-1.5">
-              <MessageSquare size={13} />Note
-            </Button>
-            <Button variant="outline" size="sm" onClick={() => setShowAddProgramDialog(true)} className="gap-1.5 text-indigo-600 border-indigo-200 hover:bg-indigo-50">
-              <Zap size={13} />Add to Program
-            </Button>
-            <Button size="sm" onClick={() => { setNewStatus(lead.status); setShowStatusDialog(true); }} className="gap-1.5">
-              <Zap size={13} />Status
+            <Button size="sm" onClick={() => { setNewStatus(lead.status); setShowStatusDialog(true); }} className="gap-1.5 h-8 text-xs px-3">
+              <Zap size={12} />Status
             </Button>
           </div>
         </div>
@@ -280,65 +294,43 @@ export default function LeadDetailClient({ id }: { id: string }) {
 
           {/* Student Details */}
           <div className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
-            <div className="px-5 py-4 border-b border-gray-100 flex items-center gap-2">
-              <div className="w-6 h-6 rounded-lg bg-blue-50 flex items-center justify-center">
-                <User size={13} className="text-blue-500" />
-              </div>
-              <span className="text-sm font-semibold text-gray-700">Student Information</span>
+            <div className="px-5 py-3 border-b border-gray-100">
+              <span className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Student</span>
             </div>
-            <div className="px-5 py-1 grid grid-cols-1 sm:grid-cols-2 gap-x-8 divide-y sm:divide-y-0">
-              <div className="sm:border-r sm:border-gray-50 sm:pr-8">
-                <InfoRow label="Full Name" value={lead.studentName} icon={User} />
-                <InfoRow label="Phone" value={lead.phone} icon={Phone} />
-                <InfoRow label="Email" value={lead.email || <span className="text-gray-400">—</span>} icon={Mail} />
-                <InfoRow label="Education" value={lead.educationLevel} icon={GraduationCap} />
-              </div>
-              <div className="sm:pl-8">
-                {lead.country && <InfoRow label="Country" value={lead.country.name} icon={Globe} />}
-                {lead.course  && <InfoRow label="Course"  value={lead.course}        icon={BookOpen} />}
-                {lead.intake  && <InfoRow label="Intake"  value={lead.intake.name}   icon={Calendar} />}
-                {lead.leadType === "DATE_BOOKING" && lead.bookingDate && (
-                  <InfoRow label="Booking Date" value={formatDate(lead.bookingDate)} icon={Calendar} />
-                )}
-                {(lead.leadType === "IELTS_CLASS" || lead.leadType === "PTE_CLASS") && (
-                  <InfoRow label="Test Type" value={LEAD_TYPE_LABELS[lead.leadType]} icon={BookOpen} />
-                )}
-                {lead.academicInfo && Object.entries(lead.academicInfo).map(([k, v]) => v ? (
-                  <InfoRow key={k} label={k.replace(/([A-Z])/g, " $1")} value={v} />
-                ) : null)}
-              </div>
+            <div className="px-5 py-2 grid grid-cols-2 sm:grid-cols-3 gap-x-6">
+              <Field label="Phone" value={lead.phone} />
+              <Field label="Email" value={lead.email || "—"} />
+              <Field label="Education" value={lead.educationLevel} />
+              {lead.country && <Field label="Country" value={lead.country.name} />}
+              {lead.course   && <Field label="Course"  value={lead.course} />}
+              {lead.intake   && <Field label="Intake"  value={lead.intake.name} />}
+              {lead.leadType === "DATE_BOOKING" && lead.bookingDate && (
+                <Field label="Booking Date" value={formatDate(lead.bookingDate)} />
+              )}
+              {lead.academicInfo && Object.entries(lead.academicInfo).map(([k, v]) => v ? (
+                <Field key={k} label={k.replace(/([A-Z])/g, " $1")} value={v} />
+              ) : null)}
             </div>
+            {lead.notes && (
+              <div className="mx-5 mb-4 mt-1 bg-amber-50 border border-amber-100 rounded-xl px-4 py-3">
+                <p className="text-xs font-semibold text-amber-600 mb-1">Notes</p>
+                <p className="text-sm text-amber-900 whitespace-pre-line leading-relaxed">{lead.notes}</p>
+              </div>
+            )}
           </div>
-
-          {/* Notes */}
-          {lead.notes && (
-            <div className="bg-amber-50 border border-amber-200 rounded-2xl px-5 py-4">
-              <div className="flex items-center gap-2 mb-2">
-                <FileText size={13} className="text-amber-600" />
-                <span className="text-xs font-semibold text-amber-700 uppercase tracking-wide">Notes</span>
-              </div>
-              <p className="text-sm text-amber-900 whitespace-pre-line leading-relaxed">{lead.notes}</p>
-            </div>
-          )}
 
           {/* Tasks */}
           <TasksSection leadId={lead.id} myUserId={meData?.user?.id ?? ""} myRole={myRole} />
 
           {/* Activity Timeline */}
           <div className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
-            <div className="px-5 py-4 border-b border-gray-100 flex items-center justify-between">
+            <div className="px-5 py-3 border-b border-gray-100 flex items-center justify-between">
               <div className="flex items-center gap-2">
-                <div className="w-6 h-6 rounded-lg bg-purple-50 flex items-center justify-center">
-                  <Clock size={13} className="text-purple-500" />
-                </div>
-                <span className="text-sm font-semibold text-gray-700">Activity</span>
-                <span className="text-xs text-gray-400 bg-gray-100 px-2 py-0.5 rounded-full">{lead.activities.length}</span>
+                <span className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Activity</span>
+                {lead.activities.length > 0 && <span className="text-[10px] text-gray-400 bg-gray-100 px-1.5 py-0.5 rounded-full">{lead.activities.length}</span>}
               </div>
-              <button
-                onClick={() => { setNote(""); setShowNoteDialog(true); }}
-                className="text-xs text-blue-600 hover:text-blue-700 font-medium flex items-center gap-1"
-              >
-                <MessageSquare size={12} />Add note
+              <button onClick={() => { setNote(""); setShowNoteDialog(true); }} className="text-xs text-blue-600 hover:text-blue-700 font-medium flex items-center gap-1">
+                <MessageSquare size={11} />Note
               </button>
             </div>
 
@@ -395,97 +387,58 @@ export default function LeadDetailClient({ id }: { id: string }) {
 
           {/* Lead Info */}
           <div className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
-            <div className="px-5 py-4 border-b border-gray-100 flex items-center gap-2">
-              <div className="w-6 h-6 rounded-lg bg-gray-100 flex items-center justify-center">
-                <Tag size={13} className="text-gray-500" />
-              </div>
-              <span className="text-sm font-semibold text-gray-700">Lead Info</span>
+            <div className="px-4 py-3 border-b border-gray-100">
+              <span className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Details</span>
             </div>
-            <div className="px-5 py-1">
-              <InfoRow label="Status" value={<StatusBadge status={lead.status} />} icon={CheckCircle} />
-              <InfoRow label="Source" value={lead.source.name} icon={MoreHorizontal} />
-              {lead.branch && <InfoRow label="Branch" value={lead.branch.name} icon={Building2} />}
-              <InfoRow
+            <div className="px-4 py-1 divide-y divide-gray-50">
+              <SideRow label="Source" value={lead.source.name} />
+              {lead.branch && <SideRow label="Branch" value={lead.branch.name} />}
+              <SideRow
                 label="Counsellor"
-                icon={UserCheck}
-                value={lead.assignedCounsellor ? (
-                  <div className="flex items-center gap-2">
-                    <div className="w-5 h-5 rounded-full bg-blue-100 text-blue-700 text-xs font-bold flex items-center justify-center">
-                      {lead.assignedCounsellor.name.charAt(0)}
-                    </div>
-                    <span>{lead.assignedCounsellor.name}</span>
-                  </div>
-                ) : <span className="text-gray-400 font-normal">Unassigned</span>}
+                value={lead.assignedCounsellor
+                  ? <span className="flex items-center gap-1.5"><span className="w-4 h-4 rounded-full bg-blue-100 text-blue-700 text-[9px] font-bold flex items-center justify-center flex-shrink-0">{lead.assignedCounsellor.name[0]}</span>{lead.assignedCounsellor.name}</span>
+                  : <span className="text-gray-400 font-normal">Unassigned</span>}
               />
               {lead.teacher && (
-                <InfoRow
+                <SideRow
                   label="Teacher"
-                  icon={TeacherIcon}
-                  value={
-                    <div className="flex items-center gap-2">
-                      <div className="w-5 h-5 rounded-full bg-emerald-100 text-emerald-700 text-xs font-bold flex items-center justify-center">
-                        {lead.teacher.name.charAt(0)}
-                      </div>
-                      <span>{lead.teacher.name}</span>
-                    </div>
-                  }
+                  value={<span className="flex items-center gap-1.5"><span className="w-4 h-4 rounded-full bg-emerald-100 text-emerald-700 text-[9px] font-bold flex items-center justify-center flex-shrink-0">{lead.teacher.name[0]}</span>{lead.teacher.name}</span>}
                 />
               )}
               {lead.shift && (
-                <InfoRow
-                  label="Shift"
-                  icon={Clock}
-                  value={
-                    <div>
-                      <span className="font-medium">{lead.shift.name}</span>
-                      <span className="text-xs text-gray-400 ml-1.5">{lead.shift.startTime}–{lead.shift.endTime}</span>
-                    </div>
-                  }
-                />
+                <SideRow label="Shift" value={`${lead.shift.name} · ${lead.shift.startTime}–${lead.shift.endTime}`} />
               )}
-              <InfoRow label="Created by" value={lead.createdBy.name} icon={User} />
-              <InfoRow label="Added" value={formatDateTime(lead.createdAt)} icon={Clock} />
-              {lead.referredBy && <InfoRow label="Referred by" value={lead.referredBy} icon={MapPin} />}
+              <SideRow label="Added by" value={`${lead.createdBy.name} · ${formatDate(lead.createdAt)}`} />
+              {lead.referredBy && <SideRow label="Referred by" value={lead.referredBy} />}
             </div>
           </div>
 
           {/* Follow-up */}
           <div className={cn("rounded-2xl border shadow-sm overflow-hidden", isOverdue ? "bg-red-50 border-red-200" : "bg-white border-gray-200")}>
-            <div className={cn("px-5 py-4 border-b flex items-center justify-between", isOverdue ? "border-red-100" : "border-gray-100")}>
-              <div className="flex items-center gap-2">
-                <div className={cn("w-6 h-6 rounded-lg flex items-center justify-center", isOverdue ? "bg-red-100" : "bg-green-50")}>
-                  <Calendar size={13} className={isOverdue ? "text-red-500" : "text-green-500"} />
-                </div>
-                <span className={cn("text-sm font-semibold", isOverdue ? "text-red-700" : "text-gray-700")}>Follow-up</span>
-                {isOverdue && (
-                  <span className="text-[10px] font-bold uppercase tracking-wide bg-red-200 text-red-700 px-1.5 py-0.5 rounded">Overdue</span>
-                )}
-              </div>
+            <div className={cn("px-4 py-3 border-b flex items-center justify-between", isOverdue ? "border-red-100" : "border-gray-100")}>
+              <span className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Follow-up</span>
+              {isOverdue && <span className="text-[10px] font-bold uppercase tracking-wide bg-red-200 text-red-700 px-1.5 py-0.5 rounded-full">Overdue</span>}
             </div>
-            <div className="px-5 py-3 space-y-1">
+            <div className="px-4 py-3 space-y-2">
               {lead.nextFollowUpAt ? (
-                <div className={cn("flex items-center gap-2 py-2")}>
-                  {isOverdue
-                    ? <AlertCircle size={15} className="text-red-500 flex-shrink-0" />
-                    : <Calendar size={15} className="text-green-500 flex-shrink-0" />}
+                <div className="flex items-center gap-2">
+                  <Calendar size={13} className={isOverdue ? "text-red-500" : "text-green-500"} />
                   <span className={cn("text-sm font-semibold", isOverdue ? "text-red-700" : "text-gray-800")}>
                     {formatDate(lead.nextFollowUpAt)}
                   </span>
                 </div>
               ) : (
-                <p className="text-sm text-gray-400 py-2">Not scheduled</p>
+                <p className="text-xs text-gray-400">Not scheduled</p>
               )}
               {lead.lastContactedAt && (
-                <InfoRow label="Last contact" value={formatDate(lead.lastContactedAt)} icon={Phone} />
+                <p className="text-xs text-gray-500">Last contact: {formatDate(lead.lastContactedAt)}</p>
               )}
               {lead.followUpNotes && (
-                <p className="text-xs text-gray-600 bg-gray-50 rounded-lg px-3 py-2 mt-1">{lead.followUpNotes}</p>
+                <p className="text-xs text-gray-600 bg-gray-50 rounded-lg px-3 py-2 leading-relaxed">{lead.followUpNotes}</p>
               )}
-            </div>
-            <div className="px-5 pb-4">
-              <Button variant="outline" size="sm" className="w-full gap-1.5" onClick={() => setShowFollowUpDialog(true)}>
-                <Calendar size={13} />Schedule Follow-up
-              </Button>
+              <button onClick={() => setShowFollowUpDialog(true)} className="w-full text-xs text-blue-600 hover:text-blue-700 font-medium py-1 text-left flex items-center gap-1 mt-1">
+                <Calendar size={11} />{lead.nextFollowUpAt ? "Reschedule" : "Schedule follow-up"}
+              </button>
             </div>
           </div>
 
