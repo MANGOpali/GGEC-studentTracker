@@ -16,7 +16,7 @@ interface Lead {
   phone: string;
   status: string;
   nextFollowUpAt: string | null;
-  country: { name: string };
+  country: { name: string } | null;
 }
 
 export default function CounsellorDashboardClient() {
@@ -77,7 +77,7 @@ export default function CounsellorDashboardClient() {
                     className="flex items-center justify-between p-3 rounded-lg hover:bg-gray-50 border transition-colors">
                     <div>
                       <p className="text-sm font-medium">{lead.studentName}</p>
-                      <p className="text-xs text-gray-500">{lead.country.name} · {lead.phone}</p>
+                      <p className="text-xs text-gray-500">{lead.country?.name ?? "—"} · {lead.phone}</p>
                     </div>
                     <div className="text-right">
                       <StatusBadge status={lead.status} />
@@ -111,7 +111,7 @@ export default function CounsellorDashboardClient() {
                     className="flex items-center justify-between p-3 rounded-lg hover:bg-gray-50 border transition-colors">
                     <div>
                       <p className="text-sm font-medium">{lead.studentName}</p>
-                      <p className="text-xs text-gray-500">{lead.country.name} · {lead.phone}</p>
+                      <p className="text-xs text-gray-500">{lead.country?.name ?? "—"} · {lead.phone}</p>
                     </div>
                     <StatusBadge status={lead.status} />
                   </Link>

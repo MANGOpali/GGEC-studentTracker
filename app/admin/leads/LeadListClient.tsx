@@ -3,12 +3,13 @@
 import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { Search, Download, ChevronLeft, ChevronRight, ArrowRight, X, SlidersHorizontal, UserPlus } from "lucide-react";
+import { Search, Download, ChevronLeft, ChevronRight, ArrowRight, X, SlidersHorizontal, UserPlus, Archive, CheckSquare } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import StatusBadge from "@/components/leads/StatusBadge";
 import { Skeleton } from "@/components/ui/skeleton";
+import { useToast } from "@/components/ui/use-toast";
 import { formatDate, ALL_STATUSES, STATUS_LABELS, LEAD_TYPE_LABELS, LEAD_TYPE_COLORS } from "@/lib/utils";
 import { cn } from "@/lib/utils";
 
@@ -196,12 +197,15 @@ function TeacherCell({ lead, teachers, onAssign }: {
 
 export default function LeadListClient() {
   const queryClient = useQueryClient();
+  const { toast } = useToast();
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(20);
   const [search, setSearch] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
   const [filters, setFilters] = useState<Filters>({ status: "", leadType: "", countryId: "", sourceId: "", counsellorId: "", branchId: "" });
   const [showFilters, setShowFilters] = useState(false);
+  const [selected, setSelected] = useState<Set<string>>(new Set());
+  const [bulkWorking, setBulkWorking] = useState(false);
 
   const { data: refData } = useQuery({ queryKey: ["reference"], queryFn: fetchRef, staleTime: 10 * 60_000 });
 
@@ -211,6 +215,9 @@ export default function LeadListClient() {
   }, [search]);
 
   useEffect(() => { setPage(1); }, [debouncedSearch, filters]);
+
+  // Clear selection on page/search/filter change
+  useEffect(() => { setSelected(new Set()); }, [page, debouncedSearch, filters]);
 
   const leadsParams = new URLSearchParams({ page: String(page), pageSize: String(pageSize) });
   if (debouncedSearch) leadsParams.set("search", debouncedSearch);
@@ -228,6 +235,62 @@ export default function LeadListClient() {
   const totalPages: number = leadsData?.totalPages ?? 1;
   const teachers: { id: string; name: string }[] = refData?.teachers ?? [];
   const counsellors: { id: string; name: string }[] = refData?.counsellors ?? [];
+
+  // Selection helpers
+  const allPageIds = leads.map((l) => l.id);
+  const allSelected = allPageIds.length > 0 && allPageIds.every((id) => selected.has(id));
+  const someSelected = allPageIds.some((id) => selected.has(id)) && !allSelected;
+
+  function toggleSelectAll() {
+    if (allSelected) {
+      setSelected((prev) => { const next = new Set(prev); allPageIds.forEach((id) => next.delete(id)); return next; });
+    } else {
+      setSelected((prev) => new Set([...prev, ...allPageIds]));
+    }
+  }
+
+  function toggleSelect(id: string) {
+    setSelected((prev) => { const next = new Set(prev); next.has(id) ? next.delete(id) : next.add(id); return next; });
+  }
+
+  async function bulkAction(fn: (id: string) => Promise<void>) {
+    setBulkWorking(true);
+    try {
+      for (const id of selected) {
+        await fn(id);
+      }
+      queryClient.invalidateQueries({ queryKey: ["leads"] });
+      setSelected(new Set());
+    } finally {
+      setBulkWorking(false);
+    }
+  }
+
+  async function bulkChangeStatus(status: string) {
+    if (!status) return;
+    const count = selected.size;
+    await bulkAction((id) =>
+      fetch(`/api/leads/${id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ status }),
+      }).then(() => {})
+    );
+    toast({ title: `Updated ${count} leads to ${STATUS_LABELS[status] ?? status}` });
+  }
+
+  async function bulkArchive() {
+    const count = selected.size;
+    if (!window.confirm(`Archive ${count} lead${count === 1 ? "" : "s"}? This will remove them from active lists.`)) return;
+    await bulkAction((id) =>
+      fetch(`/api/leads/${id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ isArchived: true }),
+      }).then(() => {})
+    );
+    toast({ title: `Archived ${count} leads` });
+  }
 
   function handleExport() {
     const params = new URLSearchParams();
@@ -348,6 +411,15 @@ export default function LeadListClient() {
           <table className="w-full text-sm">
             <thead>
               <tr className="border-b border-gray-100">
+                <th className="px-4 py-3 w-8">
+                  <input
+                    type="checkbox"
+                    checked={allSelected}
+                    ref={(el) => { if (el) el.indeterminate = someSelected; }}
+                    onChange={toggleSelectAll}
+                    className="rounded border-gray-300 cursor-pointer"
+                  />
+                </th>
                 <th className="text-left px-4 py-3 text-xs font-semibold text-gray-400 uppercase tracking-wider whitespace-nowrap">Lead</th>
                 <th className="text-left px-4 py-3 text-xs font-semibold text-gray-400 uppercase tracking-wider">Student</th>
                 <th className="text-left px-4 py-3 text-xs font-semibold text-gray-400 uppercase tracking-wider">Status</th>
@@ -361,14 +433,14 @@ export default function LeadListClient() {
               {isLoading ? (
                 Array.from({ length: 6 }).map((_, i) => (
                   <tr key={i}>
-                    {Array.from({ length: 7 }).map((__, j) => (
+                    {Array.from({ length: 8 }).map((__, j) => (
                       <td key={j} className="px-4 py-3"><Skeleton className="h-4 w-full" /></td>
                     ))}
                   </tr>
                 ))
               ) : leads.length === 0 ? (
                 <tr>
-                  <td colSpan={7} className="text-center py-16 text-gray-400">
+                  <td colSpan={8} className="text-center py-16 text-gray-400">
                     <Search size={30} className="mx-auto mb-3 opacity-30" />
                     <p className="font-medium">No leads found</p>
                     {hasFilters && <p className="text-xs mt-1">Try adjusting your filters</p>}
@@ -376,7 +448,16 @@ export default function LeadListClient() {
                 </tr>
               ) : (
                 leads.map((lead) => (
-                  <tr key={lead.id} className="hover:bg-blue-50/30 transition-colors group">
+                  <tr key={lead.id} className={cn("hover:bg-blue-50/30 transition-colors group", selected.has(lead.id) && "bg-blue-50/50")}>
+                    {/* Checkbox */}
+                    <td className="px-4 py-3 w-8">
+                      <input
+                        type="checkbox"
+                        checked={selected.has(lead.id)}
+                        onChange={() => toggleSelect(lead.id)}
+                        className="rounded border-gray-300 cursor-pointer"
+                      />
+                    </td>
                     {/* Lead ID + Type */}
                     <td className="px-4 py-3">
                       <div className="flex items-center gap-2">
@@ -404,7 +485,7 @@ export default function LeadListClient() {
                     <td className="px-4 py-3 hidden md:table-cell">
                       <CounsellorCell lead={lead} counsellors={counsellors} onAssign={assignCounsellor} />
                     </td>
-                    {/* Teacher (inline assign) */}
+                    {/* Teacher */}
                     <td className="px-4 py-3 hidden lg:table-cell">
                       <TeacherCell lead={lead} teachers={teachers} onAssign={assignTeacher} />
                     </td>
@@ -452,6 +533,40 @@ export default function LeadListClient() {
           </div>
         </div>
       </div>
+
+      {/* Bulk Action Bar */}
+      {selected.size > 0 && (
+        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 bg-gray-900 text-white rounded-2xl shadow-2xl px-4 py-3 flex items-center gap-3 animate-in slide-in-from-bottom-4">
+          <CheckSquare size={15} className="text-gray-400 flex-shrink-0" />
+          <span className="text-sm font-medium whitespace-nowrap">{selected.size} selected</span>
+          <div className="w-px h-5 bg-gray-600" />
+          {/* Change Status */}
+          <select
+            disabled={bulkWorking}
+            defaultValue=""
+            onChange={(e) => { if (e.target.value) { bulkChangeStatus(e.target.value); e.target.value = ""; } }}
+            className="bg-gray-800 text-white text-xs rounded-lg px-2 py-1.5 border border-gray-700 cursor-pointer disabled:opacity-50"
+          >
+            <option value="" disabled>Change status…</option>
+            {ALL_STATUSES.map((s) => (
+              <option key={s} value={s}>{STATUS_LABELS[s] ?? s}</option>
+            ))}
+          </select>
+          {/* Archive */}
+          <button
+            disabled={bulkWorking}
+            onClick={bulkArchive}
+            className="flex items-center gap-1.5 text-xs font-medium text-red-400 hover:text-red-300 disabled:opacity-50 transition-colors"
+          >
+            <Archive size={13} />Archive
+          </button>
+          <div className="w-px h-5 bg-gray-600" />
+          {/* Clear */}
+          <button onClick={() => setSelected(new Set())} className="text-gray-400 hover:text-white transition-colors">
+            <X size={15} />
+          </button>
+        </div>
+      )}
     </div>
   );
 }

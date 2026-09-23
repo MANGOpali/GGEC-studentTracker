@@ -20,6 +20,8 @@ export async function GET(request: NextRequest) {
   const monthEnd = endOfMonth(now);
 
   const counsellorFilter = session.role === "COUNSELLOR" ? { assignedCounsellorId: session.userId } : {};
+  const receptionFilter = session.role === "RECEPTIONIST" ? { createdById: session.userId } : {};
+  const roleFilter = { ...counsellorFilter, ...receptionFilter };
 
   const [
     totalLeads, todaysLeads, newLeads, followUpsDueToday, overdueFollowUps,
@@ -27,22 +29,22 @@ export async function GET(request: NextRequest) {
     ieltsLeads, pteLeads, dateBookingLeads,
     ieltsInClass, pteInClass, bookingsConfirmed,
   ] = await Promise.all([
-    prisma.lead.count({ where: { ...counsellorFilter, isArchived: false } }),
-    prisma.lead.count({ where: { ...counsellorFilter, createdAt: { gte: todayStart, lte: todayEnd }, isArchived: false } }),
-    prisma.lead.count({ where: { ...counsellorFilter, status: "NEW", isArchived: false } }),
-    prisma.lead.count({ where: { ...counsellorFilter, nextFollowUpAt: { gte: todayStart, lte: todayEnd }, isArchived: false } }),
-    prisma.lead.count({ where: { ...counsellorFilter, nextFollowUpAt: { lt: todayStart }, isArchived: false } }),
-    prisma.lead.count({ where: { ...counsellorFilter, status: "COUNSELLING_COMPLETED", createdAt: { gte: monthStart, lte: monthEnd }, isArchived: false } }),
-    prisma.lead.count({ where: { ...counsellorFilter, status: { in: ["APPLICATION_STARTED", "APPLICATION_SUBMITTED", "OFFER_RECEIVED"] }, isArchived: false } }),
-    prisma.lead.count({ where: { ...counsellorFilter, status: "VISA_PROCESS", isArchived: false } }),
-    prisma.lead.count({ where: { ...counsellorFilter, status: "VISA_GRANTED", isArchived: false } }),
-    prisma.lead.count({ where: { ...counsellorFilter, status: "ENROLLED", isArchived: false } }),
-    prisma.lead.count({ where: { ...counsellorFilter, leadType: "IELTS_CLASS", isArchived: false } }),
-    prisma.lead.count({ where: { ...counsellorFilter, leadType: "PTE_CLASS", isArchived: false } }),
-    prisma.lead.count({ where: { ...counsellorFilter, leadType: "DATE_BOOKING", isArchived: false } }),
-    prisma.lead.count({ where: { ...counsellorFilter, leadType: "IELTS_CLASS", status: "IN_CLASS", isArchived: false } }),
-    prisma.lead.count({ where: { ...counsellorFilter, leadType: "PTE_CLASS", status: "IN_CLASS", isArchived: false } }),
-    prisma.lead.count({ where: { ...counsellorFilter, leadType: "DATE_BOOKING", status: "CONFIRMED", isArchived: false } }),
+    prisma.lead.count({ where: { ...roleFilter, isArchived: false } }),
+    prisma.lead.count({ where: { ...roleFilter, createdAt: { gte: todayStart, lte: todayEnd }, isArchived: false } }),
+    prisma.lead.count({ where: { ...roleFilter, status: "NEW", isArchived: false } }),
+    prisma.lead.count({ where: { ...roleFilter, nextFollowUpAt: { gte: todayStart, lte: todayEnd }, isArchived: false } }),
+    prisma.lead.count({ where: { ...roleFilter, nextFollowUpAt: { lt: todayStart }, isArchived: false } }),
+    prisma.lead.count({ where: { ...roleFilter, status: "COUNSELLING_COMPLETED", createdAt: { gte: monthStart, lte: monthEnd }, isArchived: false } }),
+    prisma.lead.count({ where: { ...roleFilter, status: { in: ["APPLICATION_STARTED", "APPLICATION_SUBMITTED", "OFFER_RECEIVED"] }, isArchived: false } }),
+    prisma.lead.count({ where: { ...roleFilter, status: "VISA_PROCESS", isArchived: false } }),
+    prisma.lead.count({ where: { ...roleFilter, status: "VISA_GRANTED", isArchived: false } }),
+    prisma.lead.count({ where: { ...roleFilter, status: "ENROLLED", isArchived: false } }),
+    prisma.lead.count({ where: { ...roleFilter, leadType: "IELTS_CLASS", isArchived: false } }),
+    prisma.lead.count({ where: { ...roleFilter, leadType: "PTE_CLASS", isArchived: false } }),
+    prisma.lead.count({ where: { ...roleFilter, leadType: "DATE_BOOKING", isArchived: false } }),
+    prisma.lead.count({ where: { ...roleFilter, leadType: "IELTS_CLASS", status: "IN_CLASS", isArchived: false } }),
+    prisma.lead.count({ where: { ...roleFilter, leadType: "PTE_CLASS", status: "IN_CLASS", isArchived: false } }),
+    prisma.lead.count({ where: { ...roleFilter, leadType: "DATE_BOOKING", status: "CONFIRMED", isArchived: false } }),
   ]);
 
   return NextResponse.json({
