@@ -19,7 +19,7 @@ interface User {
   phone: string | null;
   isActive: boolean;
   branch: { name: string } | null;
-  _count: { assignedLeads: number };
+  _count: { assignedLeads: number; createdLeads: number; teachingLeads: number };
 }
 
 const roleColors: Record<string, string> = {
@@ -124,7 +124,9 @@ export default function UsersClient() {
                       <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${roleColors[user.role]}`}>{user.role}</span>
                     </td>
                     <td className="px-4 py-3 hidden md:table-cell text-gray-500">{user.branch?.name ?? "—"}</td>
-                    <td className="px-4 py-3 hidden lg:table-cell text-gray-600">{user._count.assignedLeads}</td>
+                    <td className="px-4 py-3 hidden lg:table-cell text-gray-600">
+                      {user.role === "RECEPTIONIST" ? user._count.createdLeads : user.role === "TEACHER" ? user._count.teachingLeads : user._count.assignedLeads}
+                    </td>
                     <td className="px-4 py-3">
                       <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${user.isActive ? "bg-green-100 text-green-700" : "bg-gray-100 text-gray-500"}`}>
                         {user.isActive ? "Active" : "Inactive"}

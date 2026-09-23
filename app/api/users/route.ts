@@ -24,7 +24,7 @@ export async function GET(request: NextRequest) {
     select: {
       id: true, email: true, name: true, role: true, phone: true,
       isActive: true, branchId: true, branch: { select: { name: true } }, createdAt: true,
-      _count: { select: { assignedLeads: true } },
+      _count: { select: { assignedLeads: true, createdLeads: true, teachingLeads: true } },
     },
     orderBy: { name: "asc" },
   });
