@@ -59,12 +59,12 @@ export default function LoginPage() {
 
         {/* Logo */}
         <div className="relative z-10">
-          <div className="bg-white rounded-2xl px-5 py-4 inline-block shadow-lg">
+          <div className="bg-white rounded-2xl px-6 py-3 inline-block shadow-lg">
             <Image
-              src="/logo-nobg.png"
+              src="/logo.png"
               alt="Global Gate Educational Consultancy"
-              width={200}
-              height={200}
+              width={220}
+              height={74}
               className="object-contain"
             />
           </div>
@@ -102,10 +102,10 @@ export default function LoginPage() {
         {/* Mobile logo */}
         <div className="lg:hidden mb-8">
           <Image
-            src="/logo-nobg.png"
+            src="/logo.png"
             alt="Global Gate Educational Consultancy"
-            width={200}
-            height={200}
+            width={220}
+            height={74}
             className="object-contain"
           />
         </div>
