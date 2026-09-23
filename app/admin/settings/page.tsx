@@ -14,6 +14,14 @@ export default function AdminSettingsPage() {
             </CardContent>
           </Card>
         </Link>
+        <Link href="/admin/import">
+          <Card className="hover:shadow-md transition-shadow cursor-pointer">
+            <CardHeader><CardTitle className="text-base">Import Students</CardTitle></CardHeader>
+            <CardContent className="text-sm text-gray-500">
+              Bulk-import existing student records from a CSV file.
+            </CardContent>
+          </Card>
+        </Link>
         <Card className="opacity-60">
           <CardHeader><CardTitle className="text-base">Reference Data</CardTitle></CardHeader>
           <CardContent className="text-sm text-gray-500">

@@ -1,0 +1,3 @@
+studentName,phone,email,educationLevel,leadType,classType,studentStatus,status,source,branch,teacher,shift,totalFee,discount,notes
+Ram Bahadur Thapa,9800000001,ram@email.com,Bachelor's,IELTS_CLASS,PHYSICAL,ACTIVE,IN_CLASS,Walk-in,Jadibuti,Nikesh,Morning Batch A,15000,0,Good student
+Sita Sharma,9800000002,,High School,PTE_CLASS,ONLINE,TRIAL,DEMO_SCHEDULED,Facebook,Jadibuti,Dixit  ,Morning Batch B,12000,1000,
