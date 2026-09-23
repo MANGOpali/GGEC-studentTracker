@@ -5,7 +5,7 @@ type LeadOwnership = { assignedCounsellorId: string | null; createdById: string;
 export function canViewLead(user: SessionData, lead: LeadOwnership): boolean {
   if (user.role === "ADMIN") return true;
   if (user.role === "COUNSELLOR") return lead.assignedCounsellorId === user.userId;
-  if (user.role === "RECEPTIONIST") return lead.createdById === user.userId;
+  if (user.role === "RECEPTIONIST") return lead.createdById === user.userId || !!lead.teacherId;
   if (user.role === "TEACHER") return lead.teacherId === user.userId;
   return false;
 }
@@ -13,7 +13,7 @@ export function canViewLead(user: SessionData, lead: LeadOwnership): boolean {
 export function canEditLead(user: SessionData, lead: LeadOwnership): boolean {
   if (user.role === "ADMIN") return true;
   if (user.role === "COUNSELLOR") return lead.assignedCounsellorId === user.userId;
-  if (user.role === "RECEPTIONIST") return lead.createdById === user.userId;
+  if (user.role === "RECEPTIONIST") return lead.createdById === user.userId || !!lead.teacherId;
   if (user.role === "TEACHER") return lead.teacherId === user.userId;
   return false;
 }
