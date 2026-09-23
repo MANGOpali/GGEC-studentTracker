@@ -37,6 +37,7 @@ export default function LoginPage() {
       const role = json.user.role;
       if (role === "ADMIN") window.location.href = "/admin/dashboard";
       else if (role === "COUNSELLOR") window.location.href = "/counsellor/dashboard";
+      else if (role === "TEACHER") window.location.href = "/teacher/dashboard";
       else window.location.href = "/reception/dashboard";
     } catch {
       setError("Network error. Please try again.");
