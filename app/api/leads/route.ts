@@ -51,7 +51,10 @@ export async function GET(request: NextRequest) {
   if (status) where.status = status as never;
   if (leadType) where.leadType = leadType as never;
   const classLeads = searchParams.get("classLeads");
-  if (classLeads) where.leadType = { in: ["IELTS_CLASS", "PTE_CLASS", "DATE_BOOKING"] } as never;
+  if (classLeads) {
+    where.leadType = { in: ["IELTS_CLASS", "PTE_CLASS", "DATE_BOOKING"] } as never;
+    where.teacherId = { not: null };
+  }
   if (countryId) where.countryId = countryId;
   if (sourceId) where.sourceId = sourceId;
   if (counsellorId && session.role === "ADMIN") where.assignedCounsellorId = counsellorId;
