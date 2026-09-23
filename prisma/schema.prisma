@@ -52,6 +52,20 @@ enum LeadStatus {
   NO_SHOW
 }
 
+enum ClassType {
+  PHYSICAL
+  ONLINE
+  CRASH_COURSE
+}
+
+enum StudentStatus {
+  TRIAL
+  ACTIVE
+  HOLD
+  COMPLETE
+  DROPPED
+}
+
 enum ActivityType {
   CREATE_LEAD
   UPDATE_LEAD
@@ -158,6 +172,8 @@ model Lead {
   assignedCounsellor   User?      @relation("AssignedLeads", fields: [assignedCounsellorId], references: [id])
   teacherId            String?
   teacher              User?      @relation("TeacherLeads", fields: [teacherId], references: [id])
+  classType            ClassType?
+  studentStatus        StudentStatus?
   status               LeadStatus @default(NEW)
   academicInfo         Json?
   englishTest          Json?
@@ -190,6 +206,8 @@ model Lead {
   @@index([leadType])
   @@index([assignedCounsellorId])
   @@index([teacherId])
+  @@index([classType])
+  @@index([studentStatus])
   @@index([createdAt])
   @@index([isArchived])
 }

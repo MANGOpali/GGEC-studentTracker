@@ -2,12 +2,13 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Search, Filter, Download, ChevronLeft, ChevronRight, ArrowRight, X, SlidersHorizontal } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import StatusBadge from "@/components/leads/StatusBadge";
+import { useToast } from "@/components/ui/use-toast";
 import { Skeleton } from "@/components/ui/skeleton";
 import { formatDate, ALL_STATUSES, STATUS_LABELS, LEAD_TYPE_LABELS, LEAD_TYPE_COLORS } from "@/lib/utils";
 import { cn } from "@/lib/utils";
@@ -26,6 +27,10 @@ interface Lead {
   source: { name: string };
   branch: { name: string } | null;
   assignedCounsellor: { name: string } | null;
+  teacherId: string | null;
+  teacher: { id: string; name: string } | null;
+  classType: string | null;
+  studentStatus: string | null;
 }
 
 interface Filters {
@@ -47,6 +52,8 @@ const TYPE_DOT: Record<string, string> = {
 };
 
 export default function LeadListClient() {
+  const { toast: _toast } = useToast();
+  const queryClient = useQueryClient();
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(20);
   const [search, setSearch] = useState("");
@@ -83,6 +90,15 @@ export default function LeadListClient() {
     if (debouncedSearch) params.set("search", debouncedSearch);
     Object.entries(filters).forEach(([k, v]) => { if (v) params.set(k, v); });
     window.open(`/api/leads/export?${params}`, "_blank");
+  }
+
+  async function assignTeacher(leadId: string, teacherId: string) {
+    await fetch(`/api/leads/${leadId}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ teacherId }),
+    });
+    queryClient.invalidateQueries({ queryKey: ["leads"] });
   }
 
   function clearFilters() {
@@ -192,6 +208,7 @@ export default function LeadListClient() {
                 <th className="text-left px-5 py-3.5 text-xs font-semibold text-gray-400 uppercase tracking-wider hidden lg:table-cell">Country / Test</th>
                 <th className="text-left px-5 py-3.5 text-xs font-semibold text-gray-400 uppercase tracking-wider">Status</th>
                 <th className="text-left px-5 py-3.5 text-xs font-semibold text-gray-400 uppercase tracking-wider hidden xl:table-cell">Counsellor</th>
+                <th className="text-left px-5 py-3.5 text-xs font-semibold text-gray-400 uppercase tracking-wider hidden xl:table-cell">Teacher</th>
                 <th className="text-left px-5 py-3.5 text-xs font-semibold text-gray-400 uppercase tracking-wider hidden lg:table-cell">Added</th>
                 <th className="px-5 py-3.5"></th>
               </tr>
@@ -200,14 +217,14 @@ export default function LeadListClient() {
               {isLoading ? (
                 Array.from({ length: 6 }).map((_, i) => (
                   <tr key={i}>
-                    {Array.from({ length: 9 }).map((__, j) => (
+                    {Array.from({ length: 10 }).map((__, j) => (
                       <td key={j} className="px-5 py-3.5"><Skeleton className="h-4 w-full" /></td>
                     ))}
                   </tr>
                 ))
               ) : leads.length === 0 ? (
                 <tr>
-                  <td colSpan={9} className="text-center py-16 text-gray-400">
+                  <td colSpan={10} className="text-center py-16 text-gray-400">
                     <Search size={32} className="mx-auto mb-3 opacity-30" />
                     <p className="font-medium">No leads found</p>
                     {hasFilters && <p className="text-xs mt-1">Try adjusting your filters</p>}
@@ -249,6 +266,19 @@ export default function LeadListClient() {
                       ) : (
                         <span className="text-gray-400 text-sm">—</span>
                       )}
+                    </td>
+                    <td className="px-5 py-3.5 hidden xl:table-cell">
+                      <Select value={lead.teacherId ?? ""} onValueChange={(v) => assignTeacher(lead.id, v)}>
+                        <SelectTrigger className="h-7 w-36 text-xs border-dashed">
+                          <SelectValue placeholder="Assign…" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="">No teacher</SelectItem>
+                          {(refData?.teachers ?? []).map((t: { id: string; name: string }) => (
+                            <SelectItem key={t.id} value={t.id}>{t.name}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
                     </td>
                     <td className="px-5 py-3.5 hidden lg:table-cell text-gray-400 text-xs whitespace-nowrap">{formatDate(lead.createdAt)}</td>
                     <td className="px-5 py-3.5">

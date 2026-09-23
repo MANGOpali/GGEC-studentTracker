@@ -118,6 +118,8 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
     if (restFields.assignedCounsellorId === "") updateData.assignedCounsellorId = null;
     if (restFields.teacherId === "") updateData.teacherId = null;
     if (restFields.teacherId && restFields.teacherId !== existing.teacherId) updateData.teacherId = restFields.teacherId;
+    if (restFields.classType === "") updateData.classType = null;
+    if (restFields.studentStatus === "") updateData.studentStatus = null;
 
     const updated = await prisma.lead.update({ where: { id: existing.id }, data: updateData });
 

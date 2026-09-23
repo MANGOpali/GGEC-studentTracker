@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Search, X, ChevronLeft, ChevronRight, ArrowRight } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -16,12 +16,28 @@ interface Student {
   id: string; leadId: string; studentName: string; phone: string;
   status: string; leadType: string; createdAt: string;
   nextFollowUpAt: string | null;
+  classType: string | null;
+  studentStatus: string | null;
   source: { name: string };
 }
+
+const CLASS_TYPE_COLORS: Record<string, string> = {
+  PHYSICAL: "bg-blue-100 text-blue-700",
+  ONLINE: "bg-purple-100 text-purple-700",
+  CRASH_COURSE: "bg-orange-100 text-orange-700",
+};
+const STUDENT_STATUS_COLORS: Record<string, string> = {
+  TRIAL: "bg-yellow-100 text-yellow-700",
+  ACTIVE: "bg-green-100 text-green-700",
+  HOLD: "bg-gray-100 text-gray-600",
+  COMPLETE: "bg-blue-100 text-blue-700",
+  DROPPED: "bg-red-100 text-red-600",
+};
 
 const CLASS_STATUSES = ["NEW","CONTACTED","FOLLOW_UP","DEMO_SCHEDULED","DEMO_ATTENDED","IN_CLASS","COMPLETED","DROPPED","NOT_INTERESTED","NO_RESPONSE","CLOSED","CONFIRMED","RESCHEDULED","NO_SHOW"];
 
 export default function StudentsClient() {
+  const queryClient = useQueryClient();
   const [page, setPage]           = useState(1);
   const [search, setSearch]       = useState("");
   const [debounced, setDebounced] = useState("");
@@ -50,6 +66,15 @@ export default function StudentsClient() {
   const totalPages: number  = data?.totalPages ?? 1;
   const hasFilters          = search || status;
 
+  async function updateField(leadId: string, field: string, value: string) {
+    await fetch(`/api/leads/${leadId}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ [field]: value }),
+    });
+    queryClient.invalidateQueries({ queryKey: ["teacher-students"] });
+  }
+
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
@@ -57,10 +82,9 @@ export default function StudentsClient() {
           <h1 className="text-2xl font-bold text-gray-900">My Students</h1>
           <p className="text-sm text-gray-500 mt-0.5">{total.toLocaleString()} students assigned to you</p>
         </div>
-        <Link href="/leads/new"><Button size="sm">+ Add Lead</Button></Link>
+        <Link href="/teacher/leads/new"><Button size="sm">+ Add Lead</Button></Link>
       </div>
 
-      {/* Filters */}
       <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-4 flex flex-wrap gap-2">
         <div className="relative flex-1 min-w-48">
           <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
@@ -77,13 +101,12 @@ export default function StudentsClient() {
         {hasFilters && <Button variant="ghost" size="sm" onClick={() => { setSearch(""); setStatus(""); }} className="text-gray-500"><X size={14} />Clear</Button>}
       </div>
 
-      {/* Table */}
       <div className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
               <tr className="border-b border-gray-100">
-                {["Lead ID", "Student", "Phone", "Type", "Status", "Added", ""].map((h) => (
+                {["Lead ID", "Student", "Phone", "Type", "Mode", "Student Status", "Status", "Added", ""].map((h) => (
                   <th key={h} className={cn("px-5 py-3.5 text-xs font-semibold text-gray-400 uppercase tracking-wider", h === "" ? "" : "text-left")}>{h}</th>
                 ))}
               </tr>
@@ -91,10 +114,10 @@ export default function StudentsClient() {
             <tbody className="divide-y divide-gray-50">
               {isLoading ? (
                 Array.from({ length: 5 }).map((_, i) => (
-                  <tr key={i}>{Array.from({ length: 7 }).map((__, j) => <td key={j} className="px-5 py-3.5"><Skeleton className="h-4 w-full" /></td>)}</tr>
+                  <tr key={i}>{Array.from({ length: 9 }).map((__, j) => <td key={j} className="px-5 py-3.5"><Skeleton className="h-4 w-full" /></td>)}</tr>
                 ))
               ) : students.length === 0 ? (
-                <tr><td colSpan={7} className="text-center py-14 text-gray-400">
+                <tr><td colSpan={9} className="text-center py-14 text-gray-400">
                   <Search size={28} className="mx-auto mb-2 opacity-30" />
                   <p className="font-medium">{hasFilters ? "No students match your filters" : "No students assigned yet"}</p>
                 </td></tr>
@@ -112,6 +135,34 @@ export default function StudentsClient() {
                       <span className={cn("px-2.5 py-1 rounded-full text-xs font-medium", LEAD_TYPE_COLORS[s.leadType] ?? "bg-gray-100 text-gray-600")}>
                         {LEAD_TYPE_LABELS[s.leadType] ?? s.leadType}
                       </span>
+                    </td>
+                    <td className="px-5 py-3.5">
+                      <Select value={s.classType ?? ""} onValueChange={(v) => updateField(s.id, "classType", v)}>
+                        <SelectTrigger className={cn("h-7 w-32 text-xs", s.classType ? "border-0 font-medium " + (CLASS_TYPE_COLORS[s.classType] ?? "") : "border-dashed text-gray-400")}>
+                          <SelectValue placeholder="Set mode" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="">Not set</SelectItem>
+                          <SelectItem value="PHYSICAL">Physical</SelectItem>
+                          <SelectItem value="ONLINE">Online</SelectItem>
+                          <SelectItem value="CRASH_COURSE">Crash Course</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </td>
+                    <td className="px-5 py-3.5">
+                      <Select value={s.studentStatus ?? ""} onValueChange={(v) => updateField(s.id, "studentStatus", v)}>
+                        <SelectTrigger className={cn("h-7 w-28 text-xs", s.studentStatus ? "border-0 font-medium " + (STUDENT_STATUS_COLORS[s.studentStatus] ?? "") : "border-dashed text-gray-400")}>
+                          <SelectValue placeholder="Set status" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="">Not set</SelectItem>
+                          <SelectItem value="TRIAL">Trial</SelectItem>
+                          <SelectItem value="ACTIVE">Active</SelectItem>
+                          <SelectItem value="HOLD">Hold</SelectItem>
+                          <SelectItem value="COMPLETE">Complete</SelectItem>
+                          <SelectItem value="DROPPED">Dropped</SelectItem>
+                        </SelectContent>
+                      </Select>
                     </td>
                     <td className="px-5 py-3.5"><StatusBadge status={s.status} /></td>
                     <td className="px-5 py-3.5 text-gray-400 text-xs whitespace-nowrap">{formatDate(s.createdAt)}</td>

@@ -50,6 +50,8 @@ export async function GET(request: NextRequest) {
   }
   if (status) where.status = status as never;
   if (leadType) where.leadType = leadType as never;
+  const classLeads = searchParams.get("classLeads");
+  if (classLeads) where.leadType = { in: ["IELTS_CLASS", "PTE_CLASS", "DATE_BOOKING"] } as never;
   if (countryId) where.countryId = countryId;
   if (sourceId) where.sourceId = sourceId;
   if (counsellorId && session.role === "ADMIN") where.assignedCounsellorId = counsellorId;
@@ -71,7 +73,8 @@ export async function GET(request: NextRequest) {
         educationLevel: true, status: true, leadType: true, bookingDate: true,
         createdAt: true, nextFollowUpAt: true,
         countryId: true, sourceId: true, intakeId: true, branchId: true,
-        assignedCounsellorId: true, createdById: true,
+        assignedCounsellorId: true, createdById: true, teacherId: true,
+        classType: true, studentStatus: true,
       },
       orderBy: { createdAt: "desc" },
       skip: (page - 1) * pageSize,
@@ -86,14 +89,16 @@ export async function GET(request: NextRequest) {
   const branchIds = [...new Set(rows.map((r) => r.branchId).filter(Boolean))] as string[];
   const counsellorIds = [...new Set(rows.map((r) => r.assignedCounsellorId).filter(Boolean))] as string[];
   const createdByIds = [...new Set(rows.map((r) => r.createdById))];
+  const teacherIds = [...new Set(rows.map((r) => r.teacherId).filter(Boolean))] as string[];
 
-  const [countries, sources, intakes, branches, counsellors, creators] = await Promise.all([
+  const [countries, sources, intakes, branches, counsellors, creators, teachers] = await Promise.all([
     countryIds.length ? prisma.country.findMany({ where: { id: { in: countryIds } }, select: { id: true, name: true } }) : Promise.resolve([]),
     prisma.leadSource.findMany({ where: { id: { in: sourceIds } }, select: { id: true, name: true } }),
     intakeIds.length ? prisma.intake.findMany({ where: { id: { in: intakeIds } }, select: { id: true, name: true } }) : Promise.resolve([]),
     branchIds.length ? prisma.branch.findMany({ where: { id: { in: branchIds } }, select: { id: true, name: true } }) : Promise.resolve([]),
     counsellorIds.length ? prisma.user.findMany({ where: { id: { in: counsellorIds } }, select: { id: true, name: true, email: true } }) : Promise.resolve([]),
     prisma.user.findMany({ where: { id: { in: createdByIds } }, select: { id: true, name: true } }),
+    teacherIds.length ? prisma.user.findMany({ where: { id: { in: teacherIds } }, select: { id: true, name: true } }) : Promise.resolve([]),
   ]);
 
   // Build lookup maps
@@ -103,6 +108,7 @@ export async function GET(request: NextRequest) {
   const bMap = new Map(branches.map((b) => [b.id, b]));
   const coMap = new Map(counsellors.map((u) => [u.id, u]));
   const crMap = new Map(creators.map((u) => [u.id, u]));
+  const tMap = new Map(teachers.map((u) => [u.id, u]));
 
   const leads = rows.map((r) => ({
     ...r,
@@ -111,6 +117,7 @@ export async function GET(request: NextRequest) {
     intake: r.intakeId ? (iMap.get(r.intakeId) ?? null) : null,
     branch: r.branchId ? (bMap.get(r.branchId) ?? null) : null,
     assignedCounsellor: r.assignedCounsellorId ? (coMap.get(r.assignedCounsellorId) ?? null) : null,
+    teacher: r.teacherId ? (tMap.get(r.teacherId) ?? null) : null,
     createdBy: crMap.get(r.createdById) ?? { id: r.createdById, name: "—" },
   }));
 
