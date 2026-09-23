@@ -4,6 +4,7 @@ import { useQuery } from "@tanstack/react-query";
 import Link from "next/link";
 import { Calendar, Users, AlertCircle, CheckCircle, FileText, UserPlus } from "lucide-react";
 import KPICard from "@/components/dashboard/KPICard";
+import MyTasksWidget from "@/components/tasks/MyTasksWidget";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import StatusBadge from "@/components/leads/StatusBadge";
@@ -120,6 +121,10 @@ export default function CounsellorDashboardClient() {
             )}
           </CardContent>
         </Card>
+      </div>
+
+      <div className="mt-6">
+        <MyTasksWidget />
       </div>
     </div>
   );

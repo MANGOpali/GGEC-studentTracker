@@ -5,6 +5,7 @@ import { Users, BookOpen, CheckCircle, UserX, ClipboardList } from "lucide-react
 import { Skeleton } from "@/components/ui/skeleton";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
+import MyTasksWidget from "@/components/tasks/MyTasksWidget";
 
 function getGreeting() {
   const h = new Date().getHours();
@@ -95,6 +96,10 @@ export default function TeacherDashboardClient({ userName }: { userName: string 
             <p className="text-sm text-gray-500 mt-1">Mark daily attendance</p>
           </div>
         </Link>
+      </div>
+
+      <div className="mt-6">
+        <MyTasksWidget />
       </div>
     </div>
   );

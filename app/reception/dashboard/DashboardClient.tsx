@@ -5,6 +5,7 @@ import Link from "next/link";
 import { UserPlus, BookOpen, Users, ClipboardList, Calendar, AlertCircle } from "lucide-react";
 import KPICard from "@/components/dashboard/KPICard";
 import StatusBadge from "@/components/leads/StatusBadge";
+import MyTasksWidget from "@/components/tasks/MyTasksWidget";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { formatDate } from "@/lib/utils";
@@ -113,6 +114,10 @@ export default function ReceptionDashboardClient() {
           )}
         </CardContent>
       </Card>
+
+      <div className="mt-6">
+        <MyTasksWidget />
+      </div>
     </div>
   );
 }

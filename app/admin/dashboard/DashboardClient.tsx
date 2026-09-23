@@ -3,6 +3,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { Users, UserPlus, Calendar, FileText, Plane, Award, CheckCircle, TrendingUp, BookOpen, CalendarCheck } from "lucide-react";
 import KPICard from "@/components/dashboard/KPICard";
+import MyTasksWidget from "@/components/tasks/MyTasksWidget";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
@@ -132,6 +133,10 @@ export default function AdminDashboardClient() {
             )}
           </CardContent>
         </Card>
+      </div>
+
+      <div className="mt-6">
+        <MyTasksWidget />
       </div>
     </div>
   );

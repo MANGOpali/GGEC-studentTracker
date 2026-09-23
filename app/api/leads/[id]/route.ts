@@ -80,7 +80,11 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
   const rawLead = await prisma.lead.findFirst({ where: { OR: [{ id }, { leadId: id }] } });
 
   if (!rawLead) return NextResponse.json({ error: "Lead not found" }, { status: 404 });
-  if (!canEditLead(session, rawLead)) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+
+  if (!canEditLead(session, rawLead)) {
+    const task = await prisma.leadTask.findFirst({ where: { leadId: rawLead.id, assignedToId: session.userId } });
+    if (!task) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  }
 
   const lead = await buildLeadResponse(rawLead);
   return NextResponse.json({ lead });

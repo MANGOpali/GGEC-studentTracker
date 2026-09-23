@@ -81,6 +81,18 @@ enum AttendanceStatus {
   EXCUSED
 }
 
+enum TaskStatus {
+  PENDING
+  IN_PROGRESS
+  DONE
+}
+
+enum TaskPriority {
+  LOW
+  NORMAL
+  HIGH
+}
+
 enum ActivityType {
   CREATE_LEAD
   UPDATE_LEAD
@@ -144,14 +156,16 @@ model User {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  assignedLeads Lead[]         @relation("AssignedLeads")
-  createdLeads  Lead[]         @relation("CreatedLeads")
-  teachingLeads Lead[]         @relation("TeacherLeads")
-  activities    LeadActivity[]
-  notifications Notification[]
-  feeRecords    FeeRecord[]    @relation("FeeCreatedBy")
-  payments      Payment[]      @relation("PaymentRecordedBy")
-  attendance    Attendance[]   @relation("AttendanceMarkedBy")
+  assignedLeads  Lead[]         @relation("AssignedLeads")
+  createdLeads   Lead[]         @relation("CreatedLeads")
+  teachingLeads  Lead[]         @relation("TeacherLeads")
+  activities     LeadActivity[]
+  notifications  Notification[]
+  feeRecords     FeeRecord[]    @relation("FeeCreatedBy")
+  payments       Payment[]      @relation("PaymentRecordedBy")
+  attendance     Attendance[]   @relation("AttendanceMarkedBy")
+  assignedTasks  LeadTask[]     @relation("AssignedTasks")
+  createdTasks   LeadTask[]     @relation("CreatedTasks")
 }
 
 model LeadSource {
@@ -239,6 +253,7 @@ model Lead {
   syncLogs    SyncLog[]
   feeRecord   FeeRecord?
   attendance  Attendance[]
+  tasks       LeadTask[]
 
   @@index([phone])
   @@index([leadId])
@@ -354,5 +369,28 @@ model SyncLog {
   createdAt DateTime   @default(now())
 
   @@index([leadId])
+  @@index([status])
+}
+
+model LeadTask {
+  id           String       @id @default(cuid())
+  leadId       String
+  lead         Lead         @relation(fields: [leadId], references: [id])
+  title        String
+  description  String?
+  assignedToId String
+  assignedTo   User         @relation("AssignedTasks", fields: [assignedToId], references: [id])
+  createdById  String
+  createdBy    User         @relation("CreatedTasks", fields: [createdById], references: [id])
+  status       TaskStatus   @default(PENDING)
+  priority     TaskPriority @default(NORMAL)
+  dueDate      DateTime?
+  completedAt  DateTime?
+  createdAt    DateTime     @default(now())
+  updatedAt    DateTime     @updatedAt
+
+  @@index([leadId])
+  @@index([assignedToId])
+  @@index([createdById])
   @@index([status])
 }
