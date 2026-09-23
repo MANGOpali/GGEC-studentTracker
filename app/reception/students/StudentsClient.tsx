@@ -239,10 +239,14 @@ export default function StudentsClient() {
                   {/* Status pill */}
                   <StatusPill value={s.studentStatus} onChange={(v) => updateField(s.id, "studentStatus", v)} />
 
-                  {/* Phone */}
-                  <a href={`tel:${s.phone}`} className="hidden sm:flex items-center gap-1 text-xs text-blue-600 hover:text-blue-800 flex-shrink-0">
+                  {/* Phone — click to copy */}
+                  <button
+                    onClick={() => { navigator.clipboard.writeText(s.phone); toast({ title: "Copied!", description: s.phone }); }}
+                    className="hidden sm:flex items-center gap-1 text-xs text-blue-600 hover:text-blue-800 flex-shrink-0"
+                    title="Copy number"
+                  >
                     <Phone size={12} />{s.phone}
-                  </a>
+                  </button>
 
                   {/* Actions */}
                   <div className="flex items-center gap-0.5 flex-shrink-0">

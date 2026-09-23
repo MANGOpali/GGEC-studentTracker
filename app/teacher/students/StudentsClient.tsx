@@ -8,6 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
+import { useToast } from "@/components/ui/use-toast";
 import { LEAD_TYPE_LABELS, LEAD_TYPE_COLORS } from "@/lib/utils";
 import { cn } from "@/lib/utils";
 
@@ -65,6 +66,7 @@ function StatusPill({ value, onChange }: { value: string | null; onChange: (v: s
 }
 
 export default function StudentsClient() {
+  const { toast } = useToast();
   const queryClient = useQueryClient();
   const [page, setPage] = useState(1);
   const [search, setSearch] = useState("");
@@ -194,10 +196,14 @@ export default function StudentsClient() {
                 {/* Status pill */}
                 <StatusPill value={s.studentStatus} onChange={(v) => updateField(s.id, "studentStatus", v)} />
 
-                {/* Phone */}
-                <a href={`tel:${s.phone}`} className="hidden sm:flex items-center gap-1 text-xs text-blue-600 hover:text-blue-800 flex-shrink-0">
+                {/* Phone — click to copy */}
+                <button
+                  onClick={() => { navigator.clipboard.writeText(s.phone); toast({ title: "Copied!", description: s.phone }); }}
+                  className="hidden sm:flex items-center gap-1 text-xs text-blue-600 hover:text-blue-800 flex-shrink-0"
+                  title="Copy number"
+                >
                   <Phone size={12} />{s.phone}
-                </a>
+                </button>
 
                 {/* View */}
                 <Link href={`/leads/${s.id}`}>
