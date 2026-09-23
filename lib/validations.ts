@@ -56,6 +56,7 @@ export const updateLeadSchema = z.object({
   branchId: z.string().optional().or(z.literal("")),
   assignedCounsellorId: z.string().optional().or(z.literal("")),
   teacherId: z.string().optional().or(z.literal("")),
+  shiftId: z.string().optional().or(z.literal("")),
   classType: z.enum(["PHYSICAL", "ONLINE", "CRASH_COURSE"]).optional().or(z.literal("")),
   studentStatus: z.enum(["TRIAL", "ACTIVE", "HOLD", "COMPLETE", "DROPPED"]).optional().or(z.literal("")),
   notes: z.string().max(2000).optional(),

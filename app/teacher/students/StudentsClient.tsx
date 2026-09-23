@@ -18,6 +18,7 @@ interface Student {
   nextFollowUpAt: string | null;
   classType: string | null;
   studentStatus: string | null;
+  shift: { id: string; name: string; startTime: string; endTime: string } | null;
   source: { name: string };
 }
 
@@ -106,7 +107,7 @@ export default function StudentsClient() {
           <table className="w-full text-sm">
             <thead>
               <tr className="border-b border-gray-100">
-                {["Lead ID", "Student", "Phone", "Type", "Mode", "Student Status", "Status", "Added", ""].map((h) => (
+                {["Lead ID", "Student", "Phone", "Type", "Mode", "Student Status", "Shift", "Status", "Added", ""].map((h) => (
                   <th key={h} className={cn("px-5 py-3.5 text-xs font-semibold text-gray-400 uppercase tracking-wider", h === "" ? "" : "text-left")}>{h}</th>
                 ))}
               </tr>
@@ -114,10 +115,10 @@ export default function StudentsClient() {
             <tbody className="divide-y divide-gray-50">
               {isLoading ? (
                 Array.from({ length: 5 }).map((_, i) => (
-                  <tr key={i}>{Array.from({ length: 9 }).map((__, j) => <td key={j} className="px-5 py-3.5"><Skeleton className="h-4 w-full" /></td>)}</tr>
+                  <tr key={i}>{Array.from({ length: 10 }).map((__, j) => <td key={j} className="px-5 py-3.5"><Skeleton className="h-4 w-full" /></td>)}</tr>
                 ))
               ) : students.length === 0 ? (
-                <tr><td colSpan={9} className="text-center py-14 text-gray-400">
+                <tr><td colSpan={10} className="text-center py-14 text-gray-400">
                   <Search size={28} className="mx-auto mb-2 opacity-30" />
                   <p className="font-medium">{hasFilters ? "No students match your filters" : "No students assigned yet"}</p>
                 </td></tr>
@@ -163,6 +164,14 @@ export default function StudentsClient() {
                           <SelectItem value="DROPPED">Dropped</SelectItem>
                         </SelectContent>
                       </Select>
+                    </td>
+                    <td className="px-5 py-3.5">
+                      {s.shift ? (
+                        <div>
+                          <div className="text-xs font-medium text-gray-700">{s.shift.name}</div>
+                          <div className="text-[10px] text-gray-400">{s.shift.startTime}–{s.shift.endTime}</div>
+                        </div>
+                      ) : <span className="text-gray-300 text-xs">—</span>}
                     </td>
                     <td className="px-5 py-3.5"><StatusBadge status={s.status} /></td>
                     <td className="px-5 py-3.5 text-gray-400 text-xs whitespace-nowrap">{formatDate(s.createdAt)}</td>

@@ -31,13 +31,14 @@ async function buildLeadResponse(rawLead: Awaited<ReturnType<typeof prisma.lead.
   if (!rawLead) return null;
 
   // Round 1 parallel: all direct relation + activities queries at once
-  const [country, source, intake, branch, assignedCounsellor, teacher, createdBy, activities] = await Promise.all([
+  const [country, source, intake, branch, assignedCounsellor, teacher, shift, createdBy, activities] = await Promise.all([
     rawLead.countryId ? prisma.country.findUnique({ where: { id: rawLead.countryId }, select: { id: true, name: true } }) : Promise.resolve(null),
     prisma.leadSource.findUnique({ where: { id: rawLead.sourceId }, select: { id: true, name: true } }),
     rawLead.intakeId ? prisma.intake.findUnique({ where: { id: rawLead.intakeId }, select: { id: true, name: true } }) : Promise.resolve(null),
     rawLead.branchId ? prisma.branch.findUnique({ where: { id: rawLead.branchId }, select: { id: true, name: true } }) : Promise.resolve(null),
     rawLead.assignedCounsellorId ? prisma.user.findUnique({ where: { id: rawLead.assignedCounsellorId }, select: { id: true, name: true, email: true } }) : Promise.resolve(null),
     rawLead.teacherId ? prisma.user.findUnique({ where: { id: rawLead.teacherId }, select: { id: true, name: true } }) : Promise.resolve(null),
+    rawLead.shiftId ? prisma.shift.findUnique({ where: { id: rawLead.shiftId }, select: { id: true, name: true, startTime: true, endTime: true, days: true } }) : Promise.resolve(null),
     prisma.user.findUnique({ where: { id: rawLead.createdById }, select: { id: true, name: true } }),
     prisma.leadActivity.findMany({
       where: { leadId: rawLead.id },
@@ -62,6 +63,7 @@ async function buildLeadResponse(rawLead: Awaited<ReturnType<typeof prisma.lead.
     branch,
     assignedCounsellor,
     teacher,
+    shift,
     createdBy: createdBy ?? { id: rawLead.createdById, name: "—" },
     activities: activities.map((a) => ({
       ...a,
@@ -118,6 +120,7 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
     if (restFields.assignedCounsellorId === "") updateData.assignedCounsellorId = null;
     if (restFields.teacherId === "") updateData.teacherId = null;
     if (restFields.teacherId && restFields.teacherId !== existing.teacherId) updateData.teacherId = restFields.teacherId;
+    if (restFields.shiftId === "") updateData.shiftId = null;
     if (restFields.classType === "") updateData.classType = null;
     if (restFields.studentStatus === "") updateData.studentStatus = null;
 

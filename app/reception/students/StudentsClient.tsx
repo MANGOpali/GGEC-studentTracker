@@ -22,6 +22,7 @@ interface Student {
   classType: string | null;
   studentStatus: string | null;
   teacher: { id: string; name: string } | null;
+  shift: { id: string; name: string; startTime: string; endTime: string } | null;
   source: { name: string };
 }
 
@@ -47,6 +48,7 @@ export default function StudentsClient() {
   const [classTypeFilter, setClassTypeFilter] = useState("");
   const [studentStatusFilter, setStudentStatusFilter] = useState("");
   const [leadTypeFilter, setLeadTypeFilter] = useState("");
+  const [shiftFilter, setShiftFilter] = useState("");
 
   const [followUpLead, setFollowUpLead] = useState<Student | null>(null);
   const [followUpDate, setFollowUpDate] = useState("");
@@ -58,14 +60,16 @@ export default function StudentsClient() {
     return () => clearTimeout(t);
   }, [search]);
 
-  useEffect(() => { setPage(1); }, [debounced, classTypeFilter, studentStatusFilter, leadTypeFilter]);
+  useEffect(() => { setPage(1); }, [debounced, classTypeFilter, studentStatusFilter, leadTypeFilter, shiftFilter]);
 
   const params = new URLSearchParams({ page: String(page), pageSize: "20", classLeads: "1" });
   if (debounced) params.set("search", debounced);
   if (leadTypeFilter) params.set("leadType", leadTypeFilter);
 
+  const { data: refData } = useQuery({ queryKey: ["reference"], queryFn: () => fetch("/api/reference").then((r) => r.json()), staleTime: 600_000 });
+
   const { data, isLoading } = useQuery({
-    queryKey: ["reception-students", page, debounced, classTypeFilter, studentStatusFilter, leadTypeFilter],
+    queryKey: ["reception-students", page, debounced, classTypeFilter, studentStatusFilter, leadTypeFilter, shiftFilter],
     queryFn: () => fetch(`/api/leads?${params}`).then((r) => r.json()),
     staleTime: 30_000,
     placeholderData: (prev) => prev,
@@ -75,11 +79,12 @@ export default function StudentsClient() {
   const students = allStudents.filter((s) => {
     if (classTypeFilter && s.classType !== classTypeFilter) return false;
     if (studentStatusFilter && s.studentStatus !== studentStatusFilter) return false;
+    if (shiftFilter && s.shift?.id !== shiftFilter) return false;
     return true;
   });
   const total: number = data?.total ?? 0;
   const totalPages: number = data?.totalPages ?? 1;
-  const hasFilters = search || classTypeFilter || studentStatusFilter || leadTypeFilter;
+  const hasFilters = search || classTypeFilter || studentStatusFilter || leadTypeFilter || shiftFilter;
 
   async function updateField(leadId: string, field: string, value: string) {
     await fetch(`/api/leads/${leadId}`, {
@@ -154,8 +159,17 @@ export default function StudentsClient() {
             <SelectItem value="DROPPED">Dropped</SelectItem>
           </SelectContent>
         </Select>
+        <Select value={shiftFilter} onValueChange={(v) => setShiftFilter(v === "all" ? "" : v)}>
+          <SelectTrigger className="w-36 h-10 text-sm bg-gray-50"><SelectValue placeholder="All Shifts" /></SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All Shifts</SelectItem>
+            {(refData?.shifts ?? []).map((s: { id: string; name: string }) => (
+              <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
         {hasFilters && (
-          <Button variant="ghost" size="sm" onClick={() => { setSearch(""); setClassTypeFilter(""); setStudentStatusFilter(""); setLeadTypeFilter(""); }} className="text-gray-500">
+          <Button variant="ghost" size="sm" onClick={() => { setSearch(""); setClassTypeFilter(""); setStudentStatusFilter(""); setLeadTypeFilter(""); setShiftFilter(""); }} className="text-gray-500">
             <X size={14} />Clear
           </Button>
         )}
@@ -172,6 +186,7 @@ export default function StudentsClient() {
                 <th className="text-left px-5 py-3.5 text-xs font-semibold text-gray-400 uppercase tracking-wider">Mode</th>
                 <th className="text-left px-5 py-3.5 text-xs font-semibold text-gray-400 uppercase tracking-wider">Status</th>
                 <th className="text-left px-5 py-3.5 text-xs font-semibold text-gray-400 uppercase tracking-wider hidden lg:table-cell">Teacher</th>
+                <th className="text-left px-5 py-3.5 text-xs font-semibold text-gray-400 uppercase tracking-wider hidden xl:table-cell">Shift</th>
                 <th className="text-left px-5 py-3.5 text-xs font-semibold text-gray-400 uppercase tracking-wider hidden lg:table-cell">Follow-up</th>
                 <th className="px-5 py-3.5"></th>
               </tr>
@@ -179,10 +194,10 @@ export default function StudentsClient() {
             <tbody className="divide-y divide-gray-50">
               {isLoading ? (
                 Array.from({ length: 5 }).map((_, i) => (
-                  <tr key={i}>{Array.from({ length: 8 }).map((__, j) => <td key={j} className="px-5 py-3.5"><Skeleton className="h-4 w-full" /></td>)}</tr>
+                  <tr key={i}>{Array.from({ length: 9 }).map((__, j) => <td key={j} className="px-5 py-3.5"><Skeleton className="h-4 w-full" /></td>)}</tr>
                 ))
               ) : students.length === 0 ? (
-                <tr><td colSpan={8} className="text-center py-14 text-gray-400">
+                <tr><td colSpan={9} className="text-center py-14 text-gray-400">
                   <Search size={28} className="mx-auto mb-2 opacity-30" />
                   <p className="font-medium">{hasFilters ? "No students match" : "No class students yet"}</p>
                 </td></tr>
@@ -240,6 +255,14 @@ export default function StudentsClient() {
                           <span className="text-sm text-gray-700">{s.teacher.name}</span>
                         </div>
                       ) : <span className="text-gray-400 text-sm">—</span>}
+                    </td>
+                    <td className="px-5 py-3.5 hidden xl:table-cell">
+                      {s.shift ? (
+                        <div>
+                          <div className="text-xs font-medium text-gray-700">{s.shift.name}</div>
+                          <div className="text-[10px] text-gray-400">{s.shift.startTime}–{s.shift.endTime}</div>
+                        </div>
+                      ) : <span className="text-gray-300 text-xs">—</span>}
                     </td>
                     <td className="px-5 py-3.5 hidden lg:table-cell">
                       {s.nextFollowUpAt ? (

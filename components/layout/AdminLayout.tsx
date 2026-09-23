@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { LayoutDashboard, Users, UserPlus, BarChart3, Settings, LogOut, Menu, X, BookOpen } from "lucide-react";
+import { LayoutDashboard, Users, UserPlus, BarChart3, Settings, LogOut, Menu, X, BookOpen, Clock } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import NotificationBell from "./NotificationBell";
@@ -13,8 +13,9 @@ const navItems = [
   { href: "/admin/dashboard", label: "Dashboard", icon: LayoutDashboard },
   { href: "/admin/leads", label: "Leads", icon: BookOpen },
   { href: "/leads/new", label: "Add Lead", icon: UserPlus },
-  { href: "/admin/users", label: "Counsellors", icon: Users },
+  { href: "/admin/users", label: "Team", icon: Users },
   { href: "/admin/reports", label: "Reports", icon: BarChart3 },
+  { href: "/admin/shifts", label: "Shifts", icon: Clock },
   { href: "/admin/settings", label: "Settings", icon: Settings },
 ];
 

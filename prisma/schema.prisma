@@ -92,8 +92,27 @@ model Branch {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  users User[]
+  users  User[]
+  leads  Lead[]
+  shifts Shift[]
+}
+
+model Shift {
+  id        String   @id @default(cuid())
+  name      String
+  startTime String
+  endTime   String
+  days      String[]
+  branchId  String?
+  branch    Branch?  @relation(fields: [branchId], references: [id])
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
   leads Lead[]
+
+  @@index([branchId])
+  @@index([isActive])
 }
 
 model User {
@@ -172,6 +191,8 @@ model Lead {
   assignedCounsellor   User?      @relation("AssignedLeads", fields: [assignedCounsellorId], references: [id])
   teacherId            String?
   teacher              User?      @relation("TeacherLeads", fields: [teacherId], references: [id])
+  shiftId              String?
+  shift                Shift?     @relation(fields: [shiftId], references: [id])
   classType            ClassType?
   studentStatus        StudentStatus?
   status               LeadStatus @default(NEW)
@@ -206,6 +227,7 @@ model Lead {
   @@index([leadType])
   @@index([assignedCounsellorId])
   @@index([teacherId])
+  @@index([shiftId])
   @@index([classType])
   @@index([studentStatus])
   @@index([createdAt])

@@ -12,7 +12,7 @@ export async function GET(request: NextRequest) {
   const session = await getSession(request);
   if (!session.userId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-  const [sources, countries, intakes, branches, counsellors, teachers] = await Promise.all([
+  const [sources, countries, intakes, branches, counsellors, teachers, shifts] = await Promise.all([
     prisma.leadSource.findMany({ where: { isActive: true }, orderBy: { order: "asc" } }),
     prisma.country.findMany({ where: { isActive: true }, orderBy: { order: "asc" } }),
     prisma.intake.findMany({ where: { isActive: true }, orderBy: { order: "asc" } }),
@@ -27,7 +27,12 @@ export async function GET(request: NextRequest) {
       select: { id: true, name: true, branchId: true },
       orderBy: { name: "asc" },
     }),
+    prisma.shift.findMany({
+      where: { isActive: true },
+      select: { id: true, name: true, startTime: true, endTime: true, days: true, branchId: true },
+      orderBy: [{ startTime: "asc" }, { name: "asc" }],
+    }),
   ]);
 
-  return NextResponse.json({ sources, countries, intakes, branches, counsellors, teachers });
+  return NextResponse.json({ sources, countries, intakes, branches, counsellors, teachers, shifts });
 }
