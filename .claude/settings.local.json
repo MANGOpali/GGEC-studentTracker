@@ -25,7 +25,16 @@
       "Bash(npx prisma *)",
       "Bash(node -e \"const p = require\\('@prisma/client/package.json'\\); console.log\\('prisma/client:', p.version\\)\")",
       "Bash(npx vercel *)",
-      "Bash(vercel *)"
+      "Bash(vercel *)",
+      "PowerShell(winget *)",
+      "PowerShell(winget install *)",
+      "PowerShell(gh *)",
+      "Bash(git branch *)",
+      "Bash(git remote *)",
+      "Bash(git push *)",
+      "Bash(git add *)",
+      "Bash(git commit *)",
+      "Bash(node -e ' *)"
     ]
   }
 }

@@ -73,7 +73,7 @@ export default function TeacherDashboardClient({ userName }: { userName: string 
       </div>
 
       {/* Quick links */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 max-w-lg">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         <Link href="/teacher/students">
           <div className="bg-white border-2 border-dashed border-blue-200 rounded-2xl p-6 text-center hover:border-blue-400 hover:bg-blue-50/40 transition-colors cursor-pointer">
             <Users className="w-9 h-9 text-blue-500 mx-auto mb-2" />
@@ -81,7 +81,14 @@ export default function TeacherDashboardClient({ userName }: { userName: string 
             <p className="text-sm text-gray-500 mt-1">{total} assigned</p>
           </div>
         </Link>
-        <Link href="/leads/new">
+        <Link href="/teacher/students">
+          <div className="bg-white border-2 border-dashed border-emerald-200 rounded-2xl p-6 text-center hover:border-emerald-400 hover:bg-emerald-50/40 transition-colors cursor-pointer">
+            <CheckCircle className="w-9 h-9 text-emerald-500 mx-auto mb-2" />
+            <p className="font-semibold text-gray-800">Students List</p>
+            <p className="text-sm text-gray-500 mt-1">Manage &amp; update status</p>
+          </div>
+        </Link>
+        <Link href="/teacher/leads/new">
           <div className="bg-white border-2 border-dashed border-gray-200 rounded-2xl p-6 text-center hover:border-gray-400 hover:bg-gray-50 transition-colors cursor-pointer">
             <BookOpen className="w-9 h-9 text-gray-400 mx-auto mb-2" />
             <p className="font-semibold text-gray-800">Add Lead</p>
