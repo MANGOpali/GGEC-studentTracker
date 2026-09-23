@@ -37,7 +37,12 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ duplicate: dup });
   }
 
-  const baseWhere = buildLeadWhereClause(session);
+  const classLeads = searchParams.get("classLeads");
+
+  // For classLeads view, reception sees all class leads (not just ones they created)
+  const baseWhere = (classLeads && session.role === "RECEPTIONIST")
+    ? { isArchived: false }
+    : buildLeadWhereClause(session);
   const where: Prisma.LeadWhereInput = { ...baseWhere };
 
   if (search) {
@@ -50,7 +55,6 @@ export async function GET(request: NextRequest) {
   }
   if (status) where.status = status as never;
   if (leadType) where.leadType = leadType as never;
-  const classLeads = searchParams.get("classLeads");
   if (classLeads) {
     where.leadType = { in: ["IELTS_CLASS", "PTE_CLASS", "DATE_BOOKING"] } as never;
     where.teacherId = { not: null };
