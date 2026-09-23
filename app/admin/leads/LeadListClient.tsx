@@ -50,6 +50,78 @@ const TYPE_DOT: Record<string, string> = {
   DATE_BOOKING: "bg-teal-500",
 };
 
+// Inline counsellor assign cell with popover
+function CounsellorCell({ lead, counsellors, onAssign }: {
+  lead: Lead;
+  counsellors: { id: string; name: string }[];
+  onAssign: (leadId: string, counsellorId: string) => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    function handler(e: MouseEvent) {
+      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
+    }
+    if (open) document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, [open]);
+
+  return (
+    <div ref={ref} className="relative">
+      <button
+        onClick={() => setOpen(!open)}
+        className={cn(
+          "flex items-center gap-1.5 px-2 py-1 rounded-lg text-xs font-medium transition-colors",
+          lead.assignedCounsellor
+            ? "text-blue-700 bg-blue-50 hover:bg-blue-100"
+            : "text-gray-400 border border-dashed border-gray-300 hover:border-blue-400 hover:text-blue-500"
+        )}
+      >
+        {lead.assignedCounsellor ? (
+          <>
+            <div className="w-5 h-5 rounded-full bg-blue-600 text-white text-[10px] font-bold flex items-center justify-center flex-shrink-0">
+              {lead.assignedCounsellor.name.charAt(0)}
+            </div>
+            <span className="max-w-[80px] truncate">{lead.assignedCounsellor.name}</span>
+          </>
+        ) : (
+          <>
+            <UserPlus size={12} />
+            <span>Assign</span>
+          </>
+        )}
+      </button>
+
+      {open && (
+        <div className="absolute z-50 top-full mt-1 left-0 bg-white border border-gray-200 rounded-xl shadow-lg py-1 min-w-[160px]">
+          <button
+            className="w-full text-left px-3 py-1.5 text-xs text-gray-500 hover:bg-gray-50"
+            onClick={() => { onAssign(lead.id, ""); setOpen(false); }}
+          >
+            No counsellor
+          </button>
+          {counsellors.map((c) => (
+            <button
+              key={c.id}
+              className={cn(
+                "w-full text-left px-3 py-1.5 text-xs hover:bg-blue-50 flex items-center gap-2",
+                lead.assignedCounsellor?.id === c.id ? "text-blue-700 font-medium" : "text-gray-700"
+              )}
+              onClick={() => { onAssign(lead.id, c.id); setOpen(false); }}
+            >
+              <div className="w-5 h-5 rounded-full bg-blue-100 text-blue-700 text-[10px] font-bold flex items-center justify-center flex-shrink-0">
+                {c.name.charAt(0)}
+              </div>
+              {c.name}
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
 // Inline teacher assign cell with popover
 function TeacherCell({ lead, teachers, onAssign }: {
   lead: Lead;
@@ -155,12 +227,22 @@ export default function LeadListClient() {
   const total: number = leadsData?.total ?? 0;
   const totalPages: number = leadsData?.totalPages ?? 1;
   const teachers: { id: string; name: string }[] = refData?.teachers ?? [];
+  const counsellors: { id: string; name: string }[] = refData?.counsellors ?? [];
 
   function handleExport() {
     const params = new URLSearchParams();
     if (debouncedSearch) params.set("search", debouncedSearch);
     Object.entries(filters).forEach(([k, v]) => { if (v) params.set(k, v); });
     window.open(`/api/leads/export?${params}`, "_blank");
+  }
+
+  async function assignCounsellor(leadId: string, counsellorId: string) {
+    await fetch(`/api/leads/${leadId}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ assignedCounsellorId: counsellorId }),
+    });
+    queryClient.invalidateQueries({ queryKey: ["leads"] });
   }
 
   async function assignTeacher(leadId: string, teacherId: string) {
@@ -320,16 +402,7 @@ export default function LeadListClient() {
                     <td className="px-4 py-3"><StatusBadge status={lead.status} /></td>
                     {/* Counsellor */}
                     <td className="px-4 py-3 hidden md:table-cell">
-                      {lead.assignedCounsellor ? (
-                        <div className="flex items-center gap-1.5">
-                          <div className="w-6 h-6 rounded-full bg-blue-100 text-blue-700 text-[10px] font-bold flex items-center justify-center flex-shrink-0">
-                            {lead.assignedCounsellor.name.charAt(0).toUpperCase()}
-                          </div>
-                          <span className="text-xs text-gray-700 max-w-[90px] truncate">{lead.assignedCounsellor.name}</span>
-                        </div>
-                      ) : (
-                        <span className="text-gray-300 text-xs">—</span>
-                      )}
+                      <CounsellorCell lead={lead} counsellors={counsellors} onAssign={assignCounsellor} />
                     </td>
                     {/* Teacher (inline assign) */}
                     <td className="px-4 py-3 hidden lg:table-cell">
