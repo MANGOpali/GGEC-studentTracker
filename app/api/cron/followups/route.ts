@@ -25,6 +25,7 @@ export async function GET(request: NextRequest) {
       studentName: true,
       nextFollowUpAt: true,
       assignedCounsellorId: true,
+      createdById: true,
     },
   });
 
@@ -41,10 +42,11 @@ export async function GET(request: NextRequest) {
   });
   const alreadyNotified = new Set(existingToday.map((n) => `${n.leadId}:${n.userId}`));
 
-  const admins = await prisma.user.findMany({
-    where: { role: "ADMIN", isActive: true },
-    select: { id: true },
-  });
+  const [admins, receptionists] = await Promise.all([
+    prisma.user.findMany({ where: { role: "ADMIN", isActive: true }, select: { id: true } }),
+    prisma.user.findMany({ where: { role: "RECEPTIONIST", isActive: true }, select: { id: true } }),
+  ]);
+  const receptionistIds = new Set(receptionists.map((r) => r.id));
 
   const rows: { userId: string; title: string; message: string; leadId: string }[] = [];
 
@@ -58,6 +60,14 @@ export async function GET(request: NextRequest) {
       const key = `${lead.id}:${lead.assignedCounsellorId}`;
       if (!alreadyNotified.has(key)) {
         rows.push({ userId: lead.assignedCounsellorId, title, message, leadId: lead.id });
+      }
+    }
+
+    // Notify the receptionist who created the lead (for their own leads only)
+    if (lead.createdById && receptionistIds.has(lead.createdById)) {
+      const key = `${lead.id}:${lead.createdById}`;
+      if (!alreadyNotified.has(key)) {
+        rows.push({ userId: lead.createdById, title, message, leadId: lead.id });
       }
     }
 

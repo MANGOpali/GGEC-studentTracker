@@ -9,7 +9,6 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Loader2 } from "lucide-react";
-import Image from "next/image";
 
 export default function LoginPage() {
   const [error, setError] = useState("");
@@ -52,7 +51,8 @@ export default function LoginPage() {
         <div className="text-center mb-8">
           <div className="flex items-center justify-center mb-4">
             <div className="bg-white rounded-2xl px-6 py-3 shadow-lg">
-              <Image src="/logo.png" alt="Global Gate Educational Consultancy" width={240} height={80} className="object-contain" priority />
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src="/logo.png" alt="Global Gate Educational Consultancy" width={240} height={80} className="object-contain" />
             </div>
           </div>
           <p className="text-blue-200 text-sm mt-2">LeadFlow — CRM</p>

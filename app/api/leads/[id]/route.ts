@@ -167,6 +167,21 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
         );
       }
 
+      // Notify receptionist creator when status changes on a lead they created
+      if (existing.createdById && existing.createdById !== session.userId) {
+        const creator = await prisma.user.findUnique({ where: { id: existing.createdById }, select: { role: true } });
+        if (creator?.role === "RECEPTIONIST") {
+          notifyPromises.push(
+            createNotification({
+              userId: existing.createdById,
+              title: "Lead Status Updated",
+              message: `Status of ${leadLabel} was changed to ${newStatus.replace(/_/g, " ")}.`,
+              leadId: existing.id,
+            })
+          );
+        }
+      }
+
       Promise.all(notifyPromises).catch(() => {});
     }
 

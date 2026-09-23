@@ -5,6 +5,7 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { LayoutDashboard, UserPlus, BookOpen, LogOut, Menu, X } from "lucide-react";
 import { cn } from "@/lib/utils";
+import NotificationBell from "./NotificationBell";
 import Image from "next/image";
 
 const navItems = [
@@ -62,6 +63,7 @@ export default function ReceptionLayout({
           </nav>
 
           <div className="flex items-center gap-2 ml-auto lg:ml-0">
+            <NotificationBell />
             <div className="hidden sm:flex items-center gap-2 pl-3 border-l border-gray-200">
               <div className="w-8 h-8 rounded-full bg-blue-600 flex items-center justify-center text-white text-sm font-bold flex-shrink-0">
                 {user.name.charAt(0).toUpperCase()}
