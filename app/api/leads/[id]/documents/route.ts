@@ -68,10 +68,14 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
   const { id } = await params;
   const lead = await getLead(id);
   if (!lead) return NextResponse.json({ error: "Not found" }, { status: 404 });
-  if (!canEditLead(session, lead)) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
 
   const { name, key, size, docType } = await request.json();
   if (!name || !key || !size || !docType) return NextResponse.json({ error: "Missing fields" }, { status: 400 });
+
+  if (!canEditLead(session, lead)) {
+    const hasTask = await prisma.leadTask.findFirst({ where: { leadId: lead.id, assignedToId: session.userId } });
+    if (!hasTask) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  }
 
   const doc = await prisma.leadDocument.create({
     data: { leadId: lead.id, name, key, size, docType, uploadedById: session.userId },
