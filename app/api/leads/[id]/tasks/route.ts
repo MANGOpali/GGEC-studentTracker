@@ -40,7 +40,7 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
 export async function POST(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const session = await getSession(request);
   if (!session.userId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  if (session.role !== "ADMIN" && session.role !== "COUNSELLOR") {
+  if (session.role !== "ADMIN" && session.role !== "COUNSELLOR" && session.role !== "RECEPTIONIST") {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 

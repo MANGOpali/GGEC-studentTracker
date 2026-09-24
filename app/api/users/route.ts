@@ -14,8 +14,8 @@ export async function GET(request: NextRequest) {
   const session = await getSession(request);
   if (!session.userId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-  const isCounsellor = session.role === "COUNSELLOR";
-  if (session.role !== "ADMIN" && !isCounsellor) {
+  const isLimitedRole = session.role === "COUNSELLOR" || session.role === "RECEPTIONIST";
+  if (session.role !== "ADMIN" && !isLimitedRole) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
@@ -27,7 +27,7 @@ export async function GET(request: NextRequest) {
   if (role) where.role = role as never;
   if (active === "true") where.isActive = true;
 
-  if (isCounsellor) {
+  if (isLimitedRole) {
     const users = await prisma.user.findMany({
       where,
       select: { id: true, name: true, role: true },

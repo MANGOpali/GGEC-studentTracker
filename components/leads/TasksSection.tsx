@@ -49,7 +49,7 @@ interface Props {
 export default function TasksSection({ leadId, myUserId, myRole }: Props) {
   const { toast } = useToast();
   const qc = useQueryClient();
-  const canCreate = myRole === "ADMIN" || myRole === "COUNSELLOR";
+  const canCreate = myRole === "ADMIN" || myRole === "COUNSELLOR" || myRole === "RECEPTIONIST";
 
   const [showCreate, setShowCreate] = useState(false);
   const [showDone, setShowDone] = useState(false);
