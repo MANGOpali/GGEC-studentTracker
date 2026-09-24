@@ -4,7 +4,7 @@ import { startOfDay, endOfDay } from "date-fns";
 
 export async function GET(request: NextRequest) {
   const secret = request.headers.get("authorization");
-  if (secret !== `Bearer ${process.env.CRON_SECRET}`) {
+  if (process.env.CRON_SECRET && secret !== `Bearer ${process.env.CRON_SECRET}`) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
