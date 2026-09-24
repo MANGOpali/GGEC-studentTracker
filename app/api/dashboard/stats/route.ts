@@ -19,9 +19,14 @@ export async function GET(request: NextRequest) {
   const monthStart = startOfMonth(now);
   const monthEnd = endOfMonth(now);
 
-  const counsellorFilter = session.role === "COUNSELLOR" ? { assignedCounsellorId: session.userId } : {};
-  const receptionFilter = session.role === "RECEPTIONIST" ? { createdById: session.userId } : {};
-  const roleFilter = { ...counsellorFilter, ...receptionFilter };
+  const roleFilter =
+    session.role === "COUNSELLOR"
+      ? { OR: [{ assignedCounsellorId: session.userId }, { createdById: session.userId }] }
+      : session.role === "RECEPTIONIST"
+      ? { createdById: session.userId }
+      : session.role === "TEACHER"
+      ? { OR: [{ teacherId: session.userId }, { createdById: session.userId }] }
+      : {};
 
   const [
     totalLeads, todaysLeads, newLeads, followUpsDueToday, overdueFollowUps,
