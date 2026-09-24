@@ -236,7 +236,7 @@ export default function LeadDetailClient({ id }: { id: string }) {
     if (!followUpDate) return;
     setSaving(true);
     try {
-      const res = await fetch(`/api/leads/${lead!.id}/followup`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ nextFollowUpAt: followUpDate, notes: followUpNotes }) });
+      const res = await fetch(`/api/leads/${lead!.id}/followup`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ nextFollowUpAt: new Date(followUpDate).toISOString(), notes: followUpNotes }) });
       if (res.ok) { await queryClient.invalidateQueries({ queryKey: ["lead", id] }); setShowFollowUpDialog(false); toast({ title: "Follow-up scheduled" }); }
     } finally { setSaving(false); }
   }
