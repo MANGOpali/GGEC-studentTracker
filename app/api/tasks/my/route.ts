@@ -33,7 +33,7 @@ export async function GET(request: NextRequest) {
       take: 20,
     }),
     // Tasks I created and assigned to others (so I can track completion)
-    (session.role === "ADMIN" || session.role === "COUNSELLOR")
+    (session.role === "ADMIN" || session.role === "COUNSELLOR" || session.role === "RECEPTIONIST")
       ? prisma.leadTask.findMany({
           where: {
             createdById: session.userId,

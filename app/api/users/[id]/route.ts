@@ -17,7 +17,7 @@ const updateUserSchema = z.object({
   phone: z.string().optional(),
   branchId: z.string().optional().nullable(),
   isActive: z.boolean().optional(),
-  role: z.enum(["ADMIN", "COUNSELLOR", "RECEPTIONIST"]).optional(),
+  role: z.enum(["ADMIN", "COUNSELLOR", "RECEPTIONIST", "TEACHER"]).optional(),
 });
 
 export async function PATCH(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {

@@ -45,6 +45,9 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   const session = await getSession(request);
   if (!session.userId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  if (session.role !== "ADMIN" && session.role !== "TEACHER" && session.role !== "RECEPTIONIST") {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  }
 
   const { records } = await request.json();
   if (!Array.isArray(records) || records.length === 0) {

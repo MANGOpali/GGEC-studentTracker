@@ -66,7 +66,7 @@ export default function DocumentsSection({ leadId, myRole }: { leadId: string; m
   });
 
   const documents = data?.documents ?? [];
-  const canDelete = myRole === "ADMIN" || myRole === "COUNSELLOR" || myRole === "RECEPTIONIST";
+  const canDelete = myRole === "ADMIN" || myRole === "COUNSELLOR" || myRole === "RECEPTIONIST" || myRole === "TEACHER";
 
   function openDialog() {
     setDocType("");

@@ -25,7 +25,11 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
   const { id } = await params;
   const lead = await getLead(id);
   if (!lead) return NextResponse.json({ error: "Not found" }, { status: 404 });
-  if (!canEditLead(session, lead)) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+
+  if (!canEditLead(session, lead)) {
+    const hasTask = await prisma.leadTask.findFirst({ where: { leadId: lead.id, assignedToId: session.userId } });
+    if (!hasTask) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  }
 
   const { searchParams } = new URL(request.url);
   const filename = searchParams.get("presign");

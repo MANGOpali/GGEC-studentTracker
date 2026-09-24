@@ -3,6 +3,7 @@ import { getIronSession } from "iron-session";
 import { SessionData, sessionOptions } from "@/lib/session";
 import { prisma } from "@/lib/db";
 import { z } from "zod";
+import { canViewLead } from "@/lib/permissions";
 
 async function getSession(req: NextRequest) {
   const res = NextResponse.next();
@@ -24,6 +25,11 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
   const { id } = await params;
   const lead = await prisma.lead.findFirst({ where: { OR: [{ id }, { leadId: id }] } });
   if (!lead) return NextResponse.json({ error: "Lead not found" }, { status: 404 });
+
+  if (!canViewLead(session, lead)) {
+    const hasTask = await prisma.leadTask.findFirst({ where: { leadId: lead.id, assignedToId: session.userId } });
+    if (!hasTask) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  }
 
   const tasks = await prisma.leadTask.findMany({
     where: { leadId: lead.id },

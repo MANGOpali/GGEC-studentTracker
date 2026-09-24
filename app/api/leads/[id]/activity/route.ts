@@ -3,6 +3,7 @@ import { getIronSession } from "iron-session";
 import { SessionData, sessionOptions } from "@/lib/session";
 import { prisma } from "@/lib/db";
 import { addNoteSchema } from "@/lib/validations";
+import { canEditLead } from "@/lib/permissions";
 
 async function getSession(req: NextRequest) {
   const res = NextResponse.next();
@@ -16,6 +17,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
   const { id } = await params;
   const existing = await prisma.lead.findFirst({ where: { OR: [{ id }, { leadId: id }] } });
   if (!existing) return NextResponse.json({ error: "Lead not found" }, { status: 404 });
+  if (!canEditLead(session, existing)) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
 
   const body = await request.json();
   const parsed = addNoteSchema.safeParse(body);
