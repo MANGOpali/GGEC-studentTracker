@@ -2,11 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { startOfDay, endOfDay } from "date-fns";
 
-export async function GET(request: NextRequest) {
-  const secret = request.headers.get("authorization");
-  if (process.env.CRON_SECRET && secret !== `Bearer ${process.env.CRON_SECRET}`) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
+export async function GET(_request: NextRequest) {
 
   const now = new Date();
   const todayStart = startOfDay(now);
