@@ -615,6 +615,30 @@ function UniversitiesTab({
 // NOTES TAB
 // ============================================================
 
+const BORDER_COLORS = [
+  "border-l-purple-400",
+  "border-l-blue-400",
+  "border-l-teal-400",
+  "border-l-orange-400",
+  "border-l-pink-400",
+  "border-l-green-400",
+];
+
+const TAG_CHIP_COLORS = [
+  "bg-purple-50 text-purple-700 border-purple-200",
+  "bg-blue-50 text-blue-700 border-blue-200",
+  "bg-teal-50 text-teal-700 border-teal-200",
+  "bg-orange-50 text-orange-700 border-orange-200",
+  "bg-pink-50 text-pink-700 border-pink-200",
+  "bg-green-50 text-green-700 border-green-200",
+];
+
+function tagColorIndex(tag: string) {
+  let hash = 0;
+  for (let i = 0; i < tag.length; i++) hash = (hash * 31 + tag.charCodeAt(i)) & 0xff;
+  return hash % BORDER_COLORS.length;
+}
+
 function NotesTab({
   notes,
   loading,
@@ -632,6 +656,7 @@ function NotesTab({
   const [tagInput, setTagInput] = useState("");
   const [search, setSearch] = useState("");
   const [filterTag, setFilterTag] = useState("");
+  const [expandedIds, setExpandedIds] = useState<Set<string>>(new Set());
   const { toast } = useToast();
 
   const form = useForm<CreateCounsellorNoteInput>({
@@ -648,13 +673,25 @@ function NotesTab({
 
   const filtered = useMemo(() => {
     return notes.filter((n) => {
-      const matchSearch = !search || n.title.toLowerCase().includes(search.toLowerCase()) || n.content.toLowerCase().includes(search.toLowerCase());
+      const q = search.toLowerCase();
+      const matchSearch = !search ||
+        n.title.toLowerCase().includes(q) ||
+        n.content.toLowerCase().includes(q) ||
+        n.tags.some((t) => t.includes(q));
       const matchTag = !filterTag || n.tags.includes(filterTag);
       return matchSearch && matchTag;
     });
   }, [notes, search, filterTag]);
 
   const hasActiveFilters = search || filterTag;
+
+  function toggleExpand(id: string) {
+    setExpandedIds((prev) => {
+      const next = new Set(prev);
+      next.has(id) ? next.delete(id) : next.add(id);
+      return next;
+    });
+  }
 
   function openAdd() {
     setEditing(null);
@@ -663,7 +700,8 @@ function NotesTab({
     setDialogOpen(true);
   }
 
-  function openEdit(n: CounsellorNote) {
+  function openEdit(e: React.MouseEvent, n: CounsellorNote) {
+    e.stopPropagation();
     setEditing(n);
     form.reset({ title: n.title, content: n.content, tags: n.tags });
     setTagInput("");
@@ -701,18 +739,13 @@ function NotesTab({
   async function confirmDelete() {
     if (!deleteTarget) return;
     const res = await fetch(`/api/counsellor-notes/${deleteTarget.id}`, { method: "DELETE" });
-    if (!res.ok) { toast({ variant: "destructive", title: "Error", description: "Failed to delete note." }); return; }
+    if (!res.ok) { toast({ variant: "destructive", title: "Error", description: "Failed to delete." }); return; }
     toast({ title: "Note deleted" });
     setDeleteTarget(null);
     onMutate();
   }
 
-  const tagColors = [
-    "bg-purple-50 text-purple-700 border-purple-100",
-    "bg-orange-50 text-orange-700 border-orange-100",
-    "bg-teal-50 text-teal-700 border-teal-100",
-    "bg-pink-50 text-pink-700 border-pink-100",
-  ];
+  const wordCount = (text: string) => text.trim().split(/\s+/).filter(Boolean).length;
 
   return (
     <>
@@ -723,7 +756,7 @@ function NotesTab({
           <Input
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            placeholder="Search notes..."
+            placeholder="Search notes by title, content or tag..."
             className="pl-9"
           />
         </div>
@@ -740,6 +773,7 @@ function NotesTab({
         </Button>
       </div>
 
+      {/* Meta row */}
       <div className="flex items-center justify-between">
         <p className="text-sm text-gray-500">
           {filtered.length} of {notes.length} {notes.length === 1 ? "note" : "notes"}
@@ -754,9 +788,10 @@ function NotesTab({
         )}
       </div>
 
+      {/* List */}
       {loading ? (
-        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
-          {[1, 2, 3].map((i) => <div key={i} className="h-40 rounded-xl bg-gray-100 animate-pulse" />)}
+        <div className="space-y-2">
+          {[1, 2, 3, 4].map((i) => <div key={i} className="h-14 rounded-xl bg-gray-100 animate-pulse" />)}
         </div>
       ) : filtered.length === 0 ? (
         <div className="text-center py-16 text-gray-400">
@@ -765,47 +800,121 @@ function NotesTab({
           {notes.length === 0 && <p className="text-sm mt-1">Jot down important information, strategies, or reminders.</p>}
         </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
-          {filtered.map((n) => (
-            <div key={n.id} className="bg-white rounded-xl border border-gray-200 p-5 flex flex-col gap-3 hover:shadow-sm transition-shadow">
-              <div className="flex items-start justify-between gap-2">
-                <h3 className="font-semibold text-gray-900 leading-tight">{n.title}</h3>
-                <div className="flex gap-1 flex-shrink-0">
-                  <button onClick={() => openEdit(n)} className="p-1.5 rounded-lg text-gray-400 hover:text-blue-600 hover:bg-blue-50 transition-colors">
-                    <Pencil size={14} />
-                  </button>
-                  <button onClick={() => setDeleteTarget(n)} className="p-1.5 rounded-lg text-gray-400 hover:text-red-500 hover:bg-red-50 transition-colors">
-                    <Trash2 size={14} />
-                  </button>
-                </div>
+        <div className="bg-white rounded-xl border border-gray-200 overflow-hidden divide-y divide-gray-100">
+          {filtered.map((n) => {
+            const isExpanded = expandedIds.has(n.id);
+            const colorIdx = n.tags.length > 0 ? tagColorIndex(n.tags[0]) : 0;
+            const borderColor = BORDER_COLORS[colorIdx];
+
+            return (
+              <div key={n.id} className={cn("border-l-4", borderColor)}>
+                {/* Collapsed row — always visible */}
+                <button
+                  onClick={() => toggleExpand(n.id)}
+                  className="w-full flex items-center gap-3 px-4 py-3.5 hover:bg-gray-50 transition-colors text-left"
+                >
+                  {isExpanded
+                    ? <ChevronDown size={15} className="text-gray-400 shrink-0" />
+                    : <ChevronRight size={15} className="text-gray-400 shrink-0" />
+                  }
+
+                  {/* Title */}
+                  <span className="flex-1 text-sm font-medium text-gray-900 truncate">{n.title}</span>
+
+                  {/* Tags */}
+                  {n.tags.length > 0 && (
+                    <div className="hidden sm:flex items-center gap-1.5 shrink-0">
+                      {n.tags.slice(0, 3).map((t) => {
+                        const ci = tagColorIndex(t);
+                        return (
+                          <span
+                            key={t}
+                            onClick={(e) => { e.stopPropagation(); setFilterTag(t === filterTag ? "" : t); }}
+                            className={cn(
+                              "text-xs px-2 py-0.5 rounded-full border cursor-pointer transition-colors",
+                              filterTag === t
+                                ? "bg-gray-800 text-white border-gray-800"
+                                : TAG_CHIP_COLORS[ci]
+                            )}
+                          >
+                            #{t}
+                          </span>
+                        );
+                      })}
+                      {n.tags.length > 3 && (
+                        <span className="text-xs text-gray-400">+{n.tags.length - 3}</span>
+                      )}
+                    </div>
+                  )}
+
+                  {/* Meta */}
+                  <div className="flex items-center gap-3 shrink-0">
+                    {!isExpanded && (
+                      <span className="hidden lg:block text-xs text-gray-300">
+                        {wordCount(n.content)} words
+                      </span>
+                    )}
+                    {isAdmin && (
+                      <span className="hidden xl:block text-xs text-gray-400">{n.counsellor.name}</span>
+                    )}
+                    <span className="text-xs text-gray-400">{formatRelative(n.updatedAt)}</span>
+                  </div>
+                </button>
+
+                {/* Expanded content */}
+                {isExpanded && (
+                  <div className="px-10 pb-4">
+                    {/* All tags when expanded */}
+                    {n.tags.length > 0 && (
+                      <div className="flex flex-wrap gap-1.5 mb-3">
+                        {n.tags.map((t) => {
+                          const ci = tagColorIndex(t);
+                          return (
+                            <span
+                              key={t}
+                              onClick={() => setFilterTag(t === filterTag ? "" : t)}
+                              className={cn(
+                                "text-xs px-2 py-0.5 rounded-full border cursor-pointer transition-colors",
+                                filterTag === t
+                                  ? "bg-gray-800 text-white border-gray-800"
+                                  : TAG_CHIP_COLORS[ci]
+                              )}
+                            >
+                              #{t}
+                            </span>
+                          );
+                        })}
+                      </div>
+                    )}
+
+                    {/* Full content */}
+                    <p className="text-sm text-gray-700 whitespace-pre-wrap leading-relaxed">
+                      {n.content}
+                    </p>
+
+                    {/* Footer: word count + actions */}
+                    <div className="flex items-center justify-between mt-4 pt-3 border-t border-gray-100">
+                      <span className="text-xs text-gray-400">{wordCount(n.content)} words · edited {formatRelative(n.updatedAt)}</span>
+                      <div className="flex items-center gap-2">
+                        <button
+                          onClick={(e) => openEdit(e, n)}
+                          className="flex items-center gap-1.5 text-xs text-gray-500 hover:text-blue-600 px-2.5 py-1.5 rounded-lg hover:bg-blue-50 transition-colors"
+                        >
+                          <Pencil size={13} /> Edit
+                        </button>
+                        <button
+                          onClick={(e) => { e.stopPropagation(); setDeleteTarget(n); }}
+                          className="flex items-center gap-1.5 text-xs text-gray-500 hover:text-red-500 px-2.5 py-1.5 rounded-lg hover:bg-red-50 transition-colors"
+                        >
+                          <Trash2 size={13} /> Delete
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                )}
               </div>
-
-              <p className="text-sm text-gray-600 line-clamp-4 flex-1 whitespace-pre-wrap">{n.content}</p>
-
-              {n.tags.length > 0 && (
-                <div className="flex flex-wrap gap-1.5">
-                  {n.tags.map((t, ti) => (
-                    <span
-                      key={t}
-                      onClick={() => setFilterTag(t === filterTag ? "" : t)}
-                      className={`text-xs px-2 py-0.5 rounded-full border cursor-pointer transition-colors ${
-                        filterTag === t
-                          ? "bg-purple-600 text-white border-purple-600"
-                          : tagColors[ti % tagColors.length]
-                      }`}
-                    >
-                      #{t}
-                    </span>
-                  ))}
-                </div>
-              )}
-
-              <div className="flex items-center justify-between pt-1 border-t border-gray-100 mt-auto">
-                <span className="text-xs text-gray-400">{formatRelative(n.updatedAt)}</span>
-                {isAdmin && <span className="text-xs text-gray-400">{n.counsellor.name}</span>}
-              </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       )}
 
@@ -827,8 +936,8 @@ function NotesTab({
               <Textarea
                 {...form.register("content")}
                 placeholder="Write your notes here..."
-                rows={6}
-                className="mt-1 resize-none"
+                rows={7}
+                className="mt-1 resize-y"
               />
               {form.formState.errors.content && <p className="text-xs text-red-500 mt-1">{form.formState.errors.content.message}</p>}
             </div>
@@ -846,14 +955,17 @@ function NotesTab({
               </div>
               {tags.length > 0 && (
                 <div className="flex flex-wrap gap-1.5 mt-2">
-                  {tags.map((t) => (
-                    <span key={t} className="flex items-center gap-1 text-xs bg-purple-50 text-purple-700 px-2 py-1 rounded-full border border-purple-100">
-                      #{t}
-                      <button type="button" onClick={() => removeTag(t)} className="hover:text-red-500">
-                        <X size={10} />
-                      </button>
-                    </span>
-                  ))}
+                  {tags.map((t) => {
+                    const ci = tagColorIndex(t);
+                    return (
+                      <span key={t} className={cn("flex items-center gap-1 text-xs px-2 py-1 rounded-full border", TAG_CHIP_COLORS[ci])}>
+                        #{t}
+                        <button type="button" onClick={() => removeTag(t)} className="hover:text-red-500 ml-0.5">
+                          <X size={10} />
+                        </button>
+                      </span>
+                    );
+                  })}
                 </div>
               )}
             </div>
