@@ -349,6 +349,7 @@ model Notification {
   createdAt DateTime @default(now())
 
   @@index([userId, isRead])
+  @@index([leadId])
 }
 
 model IntegrationSetting {
