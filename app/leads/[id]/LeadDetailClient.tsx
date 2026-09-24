@@ -127,7 +127,7 @@ export default function LeadDetailClient({ id }: { id: string }) {
     queryKey: ["lead", id],
     queryFn: async () => {
       const r = await fetch(`/api/leads/${id}`);
-      if (r.status === 404 || r.status === 403) { router.replace("/admin/leads"); return null as unknown as Lead; }
+      if (r.status === 404 || r.status === 403) { router.back(); return null as unknown as Lead; }
       return (await r.json()).lead as Lead;
     },
     staleTime: 30_000,
