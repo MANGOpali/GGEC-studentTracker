@@ -57,6 +57,7 @@ export default function DocumentsSection({ leadId, myRole }: { leadId: string; m
   const [uploading, setUploading] = useState(false);
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [downloadingId, setDownloadingId] = useState<string | null>(null);
+  const [docToDelete, setDocToDelete] = useState<Doc | null>(null);
 
   const { data, isLoading } = useQuery<{ documents: Doc[] }>({
     queryKey: ["documents", leadId],
@@ -121,11 +122,12 @@ export default function DocumentsSection({ leadId, myRole }: { leadId: string; m
     }
   }
 
-  async function handleDelete(doc: Doc) {
-    if (!confirm(`Delete "${doc.name}"?`)) return;
-    setDeletingId(doc.id);
+  async function confirmDelete() {
+    if (!docToDelete) return;
+    setDeletingId(docToDelete.id);
+    setDocToDelete(null);
     try {
-      const res = await fetch(`/api/leads/${leadId}/documents?docId=${doc.id}`, { method: "DELETE" });
+      const res = await fetch(`/api/leads/${leadId}/documents?docId=${docToDelete.id}`, { method: "DELETE" });
       if (!res.ok) throw new Error("Failed to delete");
       await queryClient.invalidateQueries({ queryKey: ["documents", leadId] });
       toast({ title: "Document deleted" });
@@ -204,7 +206,7 @@ export default function DocumentsSection({ leadId, myRole }: { leadId: string; m
                         </button>
                         {canDelete && (
                           <button
-                            onClick={() => handleDelete(doc)}
+                            onClick={() => setDocToDelete(doc)}
                             disabled={deletingId === doc.id}
                             className="w-6 h-6 rounded-md flex items-center justify-center text-gray-400 hover:text-red-600 hover:bg-red-50 transition-colors"
                             title="Delete"
@@ -223,6 +225,40 @@ export default function DocumentsSection({ leadId, myRole }: { leadId: string; m
           </div>
         )}
       </div>
+
+      {/* Delete confirmation */}
+      <Dialog open={!!docToDelete} onOpenChange={(open) => { if (!open) setDocToDelete(null); }}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <div className="w-8 h-8 rounded-full bg-red-100 flex items-center justify-center flex-shrink-0">
+                <Trash2 size={14} className="text-red-600" />
+              </div>
+              Delete Document
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-3">
+            <p className="text-sm text-gray-600">
+              Are you sure you want to delete this document? This action cannot be undone.
+            </p>
+            {docToDelete && (
+              <div className="flex items-center gap-3 p-3 rounded-xl bg-gray-50 border border-gray-100">
+                <div className="w-8 h-8 rounded-lg bg-white border border-gray-200 flex items-center justify-center flex-shrink-0">
+                  <FileIcon name={docToDelete.name} />
+                </div>
+                <div className="min-w-0">
+                  <p className="text-xs font-semibold text-gray-800 truncate">{docToDelete.name}</p>
+                  <p className="text-[10px] text-gray-400">{formatBytes(docToDelete.size)} · {docToDelete.docType}</p>
+                </div>
+              </div>
+            )}
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setDocToDelete(null)}>Cancel</Button>
+            <Button variant="destructive" onClick={confirmDelete}>Delete</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       <Dialog open={showDialog} onOpenChange={setShowDialog}>
         <DialogContent className="max-w-sm">
