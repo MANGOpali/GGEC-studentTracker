@@ -424,7 +424,7 @@ export default function LeadDetailClient({ id }: { id: string }) {
                 <div className="flex items-center gap-2">
                   <Calendar size={13} className={isOverdue ? "text-red-500" : "text-green-500"} />
                   <span className={cn("text-sm font-semibold", isOverdue ? "text-red-700" : "text-gray-800")}>
-                    {formatDate(lead.nextFollowUpAt)}
+                    {formatDateTime(lead.nextFollowUpAt)}
                   </span>
                 </div>
               ) : (

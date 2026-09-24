@@ -9,7 +9,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { formatDate } from "@/lib/utils";
+import { formatDateTime } from "@/lib/utils";
 import { cn } from "@/lib/utils";
 
 interface Lead {
@@ -194,7 +194,7 @@ function LeadList({ leads, urgent = false, emptyMsg, showCounsellor }: {
           <div className="text-right flex-shrink-0 ml-3">
             <StatusBadge status={lead.status} />
             <p className={cn("text-xs mt-1 font-medium", urgent ? "text-red-600" : "text-gray-400")}>
-              {formatDate(lead.nextFollowUpAt)}
+              {formatDateTime(lead.nextFollowUpAt)}
             </p>
           </div>
         </Link>

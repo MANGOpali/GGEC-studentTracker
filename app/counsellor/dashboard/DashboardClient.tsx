@@ -9,7 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import StatusBadge from "@/components/leads/StatusBadge";
 import { Skeleton } from "@/components/ui/skeleton";
-import { formatDate } from "@/lib/utils";
+import { formatDateTime } from "@/lib/utils";
 
 interface Lead {
   id: string;
@@ -84,7 +84,7 @@ export default function CounsellorDashboardClient() {
                       <StatusBadge status={lead.status} />
                       {lead.nextFollowUpAt && (
                         <p className={`text-xs mt-1 ${new Date(lead.nextFollowUpAt) < new Date() ? "text-red-500" : "text-gray-500"}`}>
-                          {formatDate(lead.nextFollowUpAt)}
+                          {formatDateTime(lead.nextFollowUpAt)}
                         </p>
                       )}
                     </div>
