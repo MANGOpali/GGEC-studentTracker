@@ -30,6 +30,7 @@ export async function GET(request: NextRequest) {
   const dateFrom = searchParams.get("dateFrom") || "";
   const dateTo = searchParams.get("dateTo") || "";
   const phone = searchParams.get("phone") || "";
+  const hasFollowup = searchParams.get("hasFollowup") === "1";
 
   // Duplicate check shortcut
   if (phone) {
@@ -69,6 +70,7 @@ export async function GET(request: NextRequest) {
     if (dateFrom) (where.createdAt as Prisma.DateTimeFilter).gte = new Date(dateFrom);
     if (dateTo) (where.createdAt as Prisma.DateTimeFilter).lte = new Date(dateTo + "T23:59:59");
   }
+  if (hasFollowup) where.nextFollowUpAt = { not: null };
 
   // Round 1: count + plain lead rows (no includes) in parallel
   const [total, rows] = await Promise.all([

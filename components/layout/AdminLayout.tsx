@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { LayoutDashboard, Users, UserPlus, BarChart3, Settings, LogOut, Menu, X, BookOpen, Clock, ClipboardList } from "lucide-react";
+import { LayoutDashboard, Users, UserPlus, BarChart3, Settings, LogOut, Menu, X, BookOpen, Clock, ClipboardList, Calendar } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import NotificationBell from "./NotificationBell";
@@ -15,6 +15,7 @@ const navItems = [
   { href: "/leads/new", label: "Add Lead", icon: UserPlus },
   { href: "/admin/users", label: "Team", icon: Users },
   { href: "/admin/reports", label: "Reports", icon: BarChart3 },
+  { href: "/admin/followups", label: "Follow-ups", icon: Calendar },
   { href: "/admin/shifts", label: "Shifts", icon: Clock },
   { href: "/admin/attendance", label: "Attendance", icon: ClipboardList },
   { href: "/admin/settings", label: "Settings", icon: Settings },

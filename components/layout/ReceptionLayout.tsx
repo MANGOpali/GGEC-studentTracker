@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { LayoutDashboard, UserPlus, BookOpen, Users, ClipboardList, LogOut, Menu, X } from "lucide-react";
+import { LayoutDashboard, UserPlus, BookOpen, Users, ClipboardList, LogOut, Menu, X, Calendar } from "lucide-react";
 import { cn } from "@/lib/utils";
 import NotificationBell from "./NotificationBell";
 import Image from "next/image";
@@ -14,6 +14,7 @@ const navItems = [
   { href: "/reception/leads", label: "My Leads", icon: BookOpen },
   { href: "/reception/students", label: "Students", icon: Users },
   { href: "/reception/attendance", label: "Attendance", icon: ClipboardList },
+  { href: "/reception/followups", label: "Follow-ups", icon: Calendar },
 ];
 
 export default function ReceptionLayout({
