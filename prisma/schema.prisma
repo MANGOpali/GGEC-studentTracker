@@ -156,17 +156,19 @@ model User {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  assignedLeads  Lead[]         @relation("AssignedLeads")
-  createdLeads   Lead[]         @relation("CreatedLeads")
-  teachingLeads  Lead[]         @relation("TeacherLeads")
-  activities     LeadActivity[]
-  notifications  Notification[]
-  feeRecords     FeeRecord[]    @relation("FeeCreatedBy")
-  payments       Payment[]      @relation("PaymentRecordedBy")
-  attendance     Attendance[]   @relation("AttendanceMarkedBy")
-  assignedTasks  LeadTask[]     @relation("AssignedTasks")
-  createdTasks   LeadTask[]     @relation("CreatedTasks")
-  uploadedDocs   LeadDocument[] @relation("UploadedDocuments")
+  assignedLeads    Lead[]            @relation("AssignedLeads")
+  createdLeads     Lead[]            @relation("CreatedLeads")
+  teachingLeads    Lead[]            @relation("TeacherLeads")
+  activities       LeadActivity[]
+  notifications    Notification[]
+  feeRecords       FeeRecord[]       @relation("FeeCreatedBy")
+  payments         Payment[]         @relation("PaymentRecordedBy")
+  attendance       Attendance[]      @relation("AttendanceMarkedBy")
+  assignedTasks    LeadTask[]        @relation("AssignedTasks")
+  createdTasks     LeadTask[]        @relation("CreatedTasks")
+  uploadedDocs     LeadDocument[]    @relation("UploadedDocuments")
+  universities     University[]
+  counsellorNotes  CounsellorNote[]
 }
 
 model LeadSource {
@@ -411,4 +413,38 @@ model LeadDocument {
   createdAt    DateTime @default(now())
 
   @@index([leadId])
+}
+
+model University {
+  id            String   @id @default(cuid())
+  name          String
+  country       String?
+  city          String?
+  tuitionFeeMin Float?
+  tuitionFeeMax Float?
+  currency      String   @default("USD")
+  courses       String[]
+  notes         String?
+  website       String?
+  createdById   String
+  createdBy     User     @relation(fields: [createdById], references: [id])
+  isActive      Boolean  @default(true)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@index([createdById])
+  @@index([country])
+}
+
+model CounsellorNote {
+  id           String   @id @default(cuid())
+  title        String
+  content      String
+  tags         String[]
+  counsellorId String
+  counsellor   User     @relation(fields: [counsellorId], references: [id])
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@index([counsellorId])
 }

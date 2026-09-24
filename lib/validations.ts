@@ -90,6 +90,30 @@ export const createUserSchema = z.object({
   branchId: z.string().optional(),
 });
 
+export const createUniversitySchema = z.object({
+  name: z.string().min(2, "University name is required").max(200),
+  country: z.string().optional().or(z.literal("")),
+  city: z.string().optional().or(z.literal("")),
+  tuitionFeeMin: z.number().min(0).optional().nullable(),
+  tuitionFeeMax: z.number().min(0).optional().nullable(),
+  currency: z.string().default("USD"),
+  courses: z.array(z.string()).default([]),
+  notes: z.string().max(2000).optional().or(z.literal("")),
+  website: z.string().url("Invalid URL").optional().or(z.literal("")),
+});
+
+export const updateUniversitySchema = createUniversitySchema.partial();
+
+export const createCounsellorNoteSchema = z.object({
+  title: z.string().min(1, "Title is required").max(200),
+  content: z.string().min(1, "Content is required").max(5000),
+  tags: z.array(z.string()).default([]),
+});
+
+export const updateCounsellorNoteSchema = createCounsellorNoteSchema.partial();
+
 export type LoginInput = z.infer<typeof loginSchema>;
 export type CreateLeadInput = z.infer<typeof createLeadSchema>;
 export type UpdateLeadInput = z.infer<typeof updateLeadSchema>;
+export type CreateUniversityInput = z.infer<typeof createUniversitySchema>;
+export type CreateCounsellorNoteInput = z.infer<typeof createCounsellorNoteSchema>;
