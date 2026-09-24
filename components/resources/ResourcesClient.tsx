@@ -4,7 +4,7 @@ import { useState, useMemo } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { Plus, Pencil, Trash2, GraduationCap, StickyNote, Globe, DollarSign, X, ExternalLink, Search, Filter } from "lucide-react";
+import { Plus, Pencil, Trash2, GraduationCap, StickyNote, Globe, DollarSign, X, ExternalLink, Search, ChevronDown, ChevronRight, FileText } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -12,7 +12,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { useToast } from "@/components/ui/use-toast";
 import { createUniversitySchema, createCounsellorNoteSchema, type CreateUniversityInput, type CreateCounsellorNoteInput } from "@/lib/validations";
-import { formatRelative } from "@/lib/utils";
+import { formatRelative, cn } from "@/lib/utils";
 
 type University = {
   id: string;
@@ -156,6 +156,7 @@ function UniversitiesTab({
   const [search, setSearch] = useState("");
   const [filterCountry, setFilterCountry] = useState("");
   const [filterCourse, setFilterCourse] = useState("");
+  const [collapsedCountries, setCollapsedCountries] = useState<Set<string>>(new Set());
   const { toast } = useToast();
 
   const form = useForm<CreateUniversityInput>({
@@ -165,7 +166,6 @@ function UniversitiesTab({
 
   const courses = form.watch("courses") ?? [];
 
-  // Derived filter options
   const allCountries = useMemo(() => {
     const set = new Set(universities.map((u) => u.country).filter(Boolean) as string[]);
     return Array.from(set).sort();
@@ -176,11 +176,14 @@ function UniversitiesTab({
     return Array.from(set).sort();
   }, [universities]);
 
-  // Filter + sort by country
   const filtered = useMemo(() => {
     return universities
       .filter((u) => {
-        const matchSearch = !search || u.name.toLowerCase().includes(search.toLowerCase()) || (u.country ?? "").toLowerCase().includes(search.toLowerCase()) || (u.city ?? "").toLowerCase().includes(search.toLowerCase());
+        const q = search.toLowerCase();
+        const matchSearch = !search ||
+          u.name.toLowerCase().includes(q) ||
+          (u.country ?? "").toLowerCase().includes(q) ||
+          (u.city ?? "").toLowerCase().includes(q);
         const matchCountry = !filterCountry || u.country === filterCountry;
         const matchCourse = !filterCourse || u.courses.includes(filterCourse);
         return matchSearch && matchCountry && matchCourse;
@@ -188,12 +191,10 @@ function UniversitiesTab({
       .sort((a, b) => {
         const ca = a.country ?? "zzz";
         const cb = b.country ?? "zzz";
-        if (ca !== cb) return ca.localeCompare(cb);
-        return a.name.localeCompare(b.name);
+        return ca !== cb ? ca.localeCompare(cb) : a.name.localeCompare(b.name);
       });
   }, [universities, search, filterCountry, filterCourse]);
 
-  // Group by country for display
   const grouped = useMemo(() => {
     const map = new Map<string, University[]>();
     for (const u of filtered) {
@@ -204,7 +205,23 @@ function UniversitiesTab({
     return Array.from(map.entries());
   }, [filtered]);
 
-  const hasActiveFilters = search || filterCountry || filterCourse;
+  const allExpanded = collapsedCountries.size === 0;
+
+  function toggleCountry(country: string) {
+    setCollapsedCountries((prev) => {
+      const next = new Set(prev);
+      next.has(country) ? next.delete(country) : next.add(country);
+      return next;
+    });
+  }
+
+  function toggleAll() {
+    if (allExpanded) {
+      setCollapsedCountries(new Set(grouped.map(([c]) => c)));
+    } else {
+      setCollapsedCountries(new Set());
+    }
+  }
 
   function openAdd() {
     setEditing(null);
@@ -267,6 +284,16 @@ function UniversitiesTab({
     onMutate();
   }
 
+  function feeLabel(u: University) {
+    if (!u.tuitionFeeMin && !u.tuitionFeeMax) return null;
+    if (u.tuitionFeeMin && u.tuitionFeeMax)
+      return `${u.currency} ${u.tuitionFeeMin.toLocaleString()} – ${u.tuitionFeeMax.toLocaleString()}`;
+    if (u.tuitionFeeMin) return `From ${u.currency} ${u.tuitionFeeMin.toLocaleString()}`;
+    return `Up to ${u.currency} ${u.tuitionFeeMax!.toLocaleString()}`;
+  }
+
+  const hasActiveFilters = search || filterCountry || filterCourse;
+
   return (
     <>
       {/* Toolbar */}
@@ -301,116 +328,168 @@ function UniversitiesTab({
         </Button>
       </div>
 
-      {/* Count + clear filters */}
+      {/* Meta row */}
       <div className="flex items-center justify-between">
         <p className="text-sm text-gray-500">
           {filtered.length} of {universities.length} {universities.length === 1 ? "university" : "universities"}
+          {grouped.length > 0 && ` · ${grouped.length} ${grouped.length === 1 ? "country" : "countries"}`}
         </p>
-        {hasActiveFilters && (
-          <button
-            onClick={() => { setSearch(""); setFilterCountry(""); setFilterCourse(""); }}
-            className="text-xs text-blue-600 hover:underline flex items-center gap-1"
-          >
-            <X size={11} /> Clear filters
-          </button>
-        )}
+        <div className="flex items-center gap-3">
+          {hasActiveFilters && (
+            <button
+              onClick={() => { setSearch(""); setFilterCountry(""); setFilterCourse(""); }}
+              className="text-xs text-blue-600 hover:underline flex items-center gap-1"
+            >
+              <X size={11} /> Clear filters
+            </button>
+          )}
+          {grouped.length > 1 && (
+            <button onClick={toggleAll} className="text-xs text-gray-500 hover:text-gray-800 hover:underline">
+              {allExpanded ? "Collapse all" : "Expand all"}
+            </button>
+          )}
+        </div>
       </div>
 
+      {/* Content */}
       {loading ? (
-        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
-          {[1, 2, 3].map((i) => <div key={i} className="h-48 rounded-xl bg-gray-100 animate-pulse" />)}
+        <div className="space-y-3">
+          {[1, 2, 3, 4, 5].map((i) => <div key={i} className="h-12 rounded-lg bg-gray-100 animate-pulse" />)}
         </div>
       ) : filtered.length === 0 ? (
         <div className="text-center py-16 text-gray-400">
           <GraduationCap size={40} className="mx-auto mb-3 opacity-30" />
           <p className="font-medium">{universities.length === 0 ? "No universities yet" : "No results match your filters"}</p>
-          {universities.length === 0 && <p className="text-sm mt-1">Add your first university to start building your reference list.</p>}
+          {universities.length === 0 && (
+            <p className="text-sm mt-1">Add your first university to start building your reference list.</p>
+          )}
         </div>
       ) : (
-        <div className="space-y-6">
-          {grouped.map(([country, items]) => (
-            <div key={country}>
-              {/* Country heading */}
-              <div className="flex items-center gap-3 mb-3">
-                <div className="flex items-center gap-2">
-                  <Globe size={14} className="text-blue-500" />
-                  <h2 className="text-sm font-semibold text-gray-700 uppercase tracking-wide">{country}</h2>
-                </div>
-                <span className="text-xs text-gray-400 bg-gray-100 px-2 py-0.5 rounded-full">{items.length}</span>
-                <div className="flex-1 h-px bg-gray-200" />
-              </div>
+        <div className="space-y-3">
+          {grouped.map(([country, items]) => {
+            const isCollapsed = collapsedCountries.has(country);
+            return (
+              <div key={country} className="bg-white rounded-xl border border-gray-200 overflow-hidden">
+                {/* Country accordion header */}
+                <button
+                  onClick={() => toggleCountry(country)}
+                  className="w-full flex items-center gap-3 px-4 py-3 hover:bg-gray-50 transition-colors text-left"
+                >
+                  {isCollapsed
+                    ? <ChevronRight size={15} className="text-gray-400 shrink-0" />
+                    : <ChevronDown size={15} className="text-gray-400 shrink-0" />
+                  }
+                  <Globe size={14} className="text-blue-500 shrink-0" />
+                  <span className="font-semibold text-gray-800 text-sm flex-1">{country}</span>
+                  <span className="text-xs text-gray-400 bg-gray-100 px-2 py-0.5 rounded-full shrink-0">
+                    {items.length} {items.length === 1 ? "university" : "universities"}
+                  </span>
+                </button>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
-                {items.map((u) => (
-                  <div key={u.id} className="bg-white rounded-xl border border-gray-200 p-5 flex flex-col gap-3 hover:shadow-sm transition-shadow">
-                    <div className="flex items-start justify-between gap-2">
-                      <div className="min-w-0">
-                        <h3 className="font-semibold text-gray-900 truncate">{u.name}</h3>
-                        {u.city && (
-                          <p className="text-sm text-gray-400 mt-0.5">{u.city}</p>
-                        )}
-                      </div>
-                      <div className="flex gap-1 flex-shrink-0">
-                        <button onClick={() => openEdit(u)} className="p-1.5 rounded-lg text-gray-400 hover:text-blue-600 hover:bg-blue-50 transition-colors">
-                          <Pencil size={14} />
-                        </button>
-                        <button onClick={() => setDeleteTarget(u)} className="p-1.5 rounded-lg text-gray-400 hover:text-red-500 hover:bg-red-50 transition-colors">
-                          <Trash2 size={14} />
-                        </button>
-                      </div>
-                    </div>
+                {/* University rows */}
+                {!isCollapsed && (
+                  <div className="border-t border-gray-100 divide-y divide-gray-100">
+                    {items.map((u) => {
+                      const fee = feeLabel(u);
+                      return (
+                        <div
+                          key={u.id}
+                          className="flex items-center gap-4 px-4 py-3 hover:bg-slate-50 transition-colors group"
+                        >
+                          {/* Name + city */}
+                          <div className="min-w-0 w-48 shrink-0">
+                            <p className="text-sm font-medium text-gray-900 truncate">{u.name}</p>
+                            {u.city && <p className="text-xs text-gray-400 truncate">{u.city}</p>}
+                          </div>
 
-                    {(u.tuitionFeeMin || u.tuitionFeeMax) && (
-                      <div className="flex items-center gap-1.5 text-sm text-emerald-700 bg-emerald-50 rounded-lg px-3 py-1.5">
-                        <DollarSign size={13} />
-                        <span className="font-medium">
-                          {u.tuitionFeeMin && u.tuitionFeeMax
-                            ? `${u.currency} ${u.tuitionFeeMin.toLocaleString()} – ${u.tuitionFeeMax.toLocaleString()}`
-                            : u.tuitionFeeMin
-                            ? `From ${u.currency} ${u.tuitionFeeMin.toLocaleString()}`
-                            : `Up to ${u.currency} ${u.tuitionFeeMax!.toLocaleString()}`}
-                        </span>
-                      </div>
-                    )}
+                          {/* Fee */}
+                          <div className="w-44 shrink-0">
+                            {fee ? (
+                              <span className="inline-flex items-center gap-1 text-xs font-medium text-emerald-700 bg-emerald-50 border border-emerald-100 px-2 py-1 rounded-md">
+                                <DollarSign size={11} />
+                                {fee}
+                              </span>
+                            ) : (
+                              <span className="text-xs text-gray-300">—</span>
+                            )}
+                          </div>
 
-                    {u.courses.length > 0 && (
-                      <div className="flex flex-wrap gap-1.5">
-                        {u.courses.map((c) => (
-                          <span
-                            key={c}
-                            onClick={() => setFilterCourse(c === filterCourse ? "" : c)}
-                            className={`text-xs px-2 py-0.5 rounded-full border cursor-pointer transition-colors ${
-                              filterCourse === c
-                                ? "bg-blue-600 text-white border-blue-600"
-                                : "bg-blue-50 text-blue-700 border-blue-100 hover:bg-blue-100"
-                            }`}
-                          >
-                            {c}
-                          </span>
-                        ))}
-                      </div>
-                    )}
+                          {/* Courses */}
+                          <div className="flex-1 flex flex-wrap gap-1.5 min-w-0">
+                            {u.courses.length > 0 ? (
+                              <>
+                                {u.courses.slice(0, 4).map((c) => (
+                                  <span
+                                    key={c}
+                                    onClick={(e) => { e.stopPropagation(); setFilterCourse(c === filterCourse ? "" : c); }}
+                                    className={cn(
+                                      "text-xs px-2 py-0.5 rounded-full border cursor-pointer transition-colors",
+                                      filterCourse === c
+                                        ? "bg-blue-600 text-white border-blue-600"
+                                        : "bg-blue-50 text-blue-700 border-blue-100 hover:bg-blue-100"
+                                    )}
+                                  >
+                                    {c}
+                                  </span>
+                                ))}
+                                {u.courses.length > 4 && (
+                                  <span className="text-xs text-gray-400 px-1 py-0.5">+{u.courses.length - 4} more</span>
+                                )}
+                              </>
+                            ) : (
+                              <span className="text-xs text-gray-300">No courses listed</span>
+                            )}
+                          </div>
 
-                    {u.notes && (
-                      <p className="text-sm text-gray-600 line-clamp-2 bg-gray-50 rounded-lg px-3 py-2">{u.notes}</p>
-                    )}
+                          {/* Notes indicator */}
+                          {u.notes && (
+                            <div className="shrink-0" title={u.notes}>
+                              <FileText size={14} className="text-gray-300 group-hover:text-gray-400 transition-colors" />
+                            </div>
+                          )}
 
-                    <div className="flex items-center justify-between mt-auto pt-1 border-t border-gray-100">
-                      <div className="flex items-center gap-2">
-                        <span className="text-xs text-gray-400">{formatRelative(u.updatedAt)}</span>
-                        {isAdmin && <span className="text-xs text-gray-400">· {u.createdBy.name}</span>}
-                      </div>
-                      {u.website && (
-                        <a href={u.website} target="_blank" rel="noopener noreferrer" className="text-xs text-blue-500 hover:underline flex items-center gap-1">
-                          Visit <ExternalLink size={10} />
-                        </a>
-                      )}
-                    </div>
+                          {/* Actions */}
+                          <div className="flex items-center gap-1 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity">
+                            {u.website && (
+                              <a
+                                href={u.website}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                onClick={(e) => e.stopPropagation()}
+                                className="p-1.5 rounded-lg text-gray-400 hover:text-blue-600 hover:bg-blue-50 transition-colors"
+                                title="Visit website"
+                              >
+                                <ExternalLink size={13} />
+                              </a>
+                            )}
+                            <button
+                              onClick={() => openEdit(u)}
+                              className="p-1.5 rounded-lg text-gray-400 hover:text-blue-600 hover:bg-blue-50 transition-colors"
+                            >
+                              <Pencil size={13} />
+                            </button>
+                            <button
+                              onClick={() => setDeleteTarget(u)}
+                              className="p-1.5 rounded-lg text-gray-400 hover:text-red-500 hover:bg-red-50 transition-colors"
+                            >
+                              <Trash2 size={13} />
+                            </button>
+                          </div>
+
+                          {/* Admin: who added */}
+                          {isAdmin && (
+                            <span className="text-xs text-gray-300 shrink-0 w-20 truncate text-right hidden xl:block">
+                              {u.createdBy.name}
+                            </span>
+                          )}
+                        </div>
+                      );
+                    })}
                   </div>
-                ))}
+                )}
               </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       )}
 
