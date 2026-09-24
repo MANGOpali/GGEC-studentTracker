@@ -1,15 +1,14 @@
 "use client";
 
-import { useState } from "react";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useState, useMemo } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { Plus, Pencil, Trash2, GraduationCap, StickyNote, Globe, DollarSign, X, ExternalLink, Tag } from "lucide-react";
+import { Plus, Pencil, Trash2, GraduationCap, StickyNote, Globe, DollarSign, X, ExternalLink, Search, Filter } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { useToast } from "@/components/ui/use-toast";
 import { createUniversitySchema, createCounsellorNoteSchema, type CreateUniversityInput, type CreateCounsellorNoteInput } from "@/lib/validations";
@@ -50,31 +49,22 @@ export default function ResourcesClient({ isAdmin = false, counsellors = [] }: P
   const [activeTab, setActiveTab] = useState<"universities" | "notes">("universities");
   const [filterCounsellorId, setFilterCounsellorId] = useState("");
   const queryClient = useQueryClient();
-  const { toast } = useToast();
 
-  // ---------- Universities ----------
   const { data: uniData, isLoading: uniLoading } = useQuery({
     queryKey: ["universities", filterCounsellorId],
     queryFn: async () => {
-      const url = filterCounsellorId
-        ? `/api/universities?counsellorId=${filterCounsellorId}`
-        : "/api/universities";
+      const url = filterCounsellorId ? `/api/universities?counsellorId=${filterCounsellorId}` : "/api/universities";
       const res = await fetch(url);
-      const json = await res.json();
-      return json.universities as University[];
+      return (await res.json()).universities as University[];
     },
   });
 
-  // ---------- Notes ----------
   const { data: notesData, isLoading: notesLoading } = useQuery({
     queryKey: ["counsellor-notes", filterCounsellorId],
     queryFn: async () => {
-      const url = filterCounsellorId
-        ? `/api/counsellor-notes?counsellorId=${filterCounsellorId}`
-        : "/api/counsellor-notes";
+      const url = filterCounsellorId ? `/api/counsellor-notes?counsellorId=${filterCounsellorId}` : "/api/counsellor-notes";
       const res = await fetch(url);
-      const json = await res.json();
-      return json.notes as CounsellorNote[];
+      return (await res.json()).notes as CounsellorNote[];
     },
   });
 
@@ -118,7 +108,7 @@ export default function ResourcesClient({ isAdmin = false, counsellors = [] }: P
           }`}
         >
           <StickyNote size={16} />
-          My Notes
+          {isAdmin ? "Notes" : "My Notes"}
           {notesData && <span className="bg-blue-100 text-blue-700 text-xs px-1.5 py-0.5 rounded-full">{notesData.length}</span>}
         </button>
       </div>
@@ -163,6 +153,9 @@ function UniversitiesTab({
   const [editing, setEditing] = useState<University | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<University | null>(null);
   const [courseInput, setCourseInput] = useState("");
+  const [search, setSearch] = useState("");
+  const [filterCountry, setFilterCountry] = useState("");
+  const [filterCourse, setFilterCourse] = useState("");
   const { toast } = useToast();
 
   const form = useForm<CreateUniversityInput>({
@@ -171,6 +164,47 @@ function UniversitiesTab({
   });
 
   const courses = form.watch("courses") ?? [];
+
+  // Derived filter options
+  const allCountries = useMemo(() => {
+    const set = new Set(universities.map((u) => u.country).filter(Boolean) as string[]);
+    return Array.from(set).sort();
+  }, [universities]);
+
+  const allCourses = useMemo(() => {
+    const set = new Set(universities.flatMap((u) => u.courses));
+    return Array.from(set).sort();
+  }, [universities]);
+
+  // Filter + sort by country
+  const filtered = useMemo(() => {
+    return universities
+      .filter((u) => {
+        const matchSearch = !search || u.name.toLowerCase().includes(search.toLowerCase()) || (u.country ?? "").toLowerCase().includes(search.toLowerCase()) || (u.city ?? "").toLowerCase().includes(search.toLowerCase());
+        const matchCountry = !filterCountry || u.country === filterCountry;
+        const matchCourse = !filterCourse || u.courses.includes(filterCourse);
+        return matchSearch && matchCountry && matchCourse;
+      })
+      .sort((a, b) => {
+        const ca = a.country ?? "zzz";
+        const cb = b.country ?? "zzz";
+        if (ca !== cb) return ca.localeCompare(cb);
+        return a.name.localeCompare(b.name);
+      });
+  }, [universities, search, filterCountry, filterCourse]);
+
+  // Group by country for display
+  const grouped = useMemo(() => {
+    const map = new Map<string, University[]>();
+    for (const u of filtered) {
+      const key = u.country ?? "Other";
+      if (!map.has(key)) map.set(key, []);
+      map.get(key)!.push(u);
+    }
+    return Array.from(map.entries());
+  }, [filtered]);
+
+  const hasActiveFilters = search || filterCountry || filterCourse;
 
   function openAdd() {
     setEditing(null);
@@ -235,12 +269,50 @@ function UniversitiesTab({
 
   return (
     <>
-      <div className="flex justify-between items-center">
-        <p className="text-sm text-gray-500">{universities.length} {universities.length === 1 ? "university" : "universities"}</p>
-        {!isAdmin && (
-          <Button onClick={openAdd} size="sm" className="gap-2">
-            <Plus size={15} /> Add University
-          </Button>
+      {/* Toolbar */}
+      <div className="flex flex-col sm:flex-row gap-3">
+        <div className="relative flex-1">
+          <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+          <Input
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder="Search by name, country or city..."
+            className="pl-9"
+          />
+        </div>
+        <select
+          value={filterCountry}
+          onChange={(e) => setFilterCountry(e.target.value)}
+          className="text-sm border border-gray-200 rounded-lg px-3 py-2 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 min-w-[150px]"
+        >
+          <option value="">All Countries</option>
+          {allCountries.map((c) => <option key={c} value={c}>{c}</option>)}
+        </select>
+        <select
+          value={filterCourse}
+          onChange={(e) => setFilterCourse(e.target.value)}
+          className="text-sm border border-gray-200 rounded-lg px-3 py-2 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 min-w-[150px]"
+        >
+          <option value="">All Courses</option>
+          {allCourses.map((c) => <option key={c} value={c}>{c}</option>)}
+        </select>
+        <Button onClick={openAdd} size="sm" className="gap-2 shrink-0">
+          <Plus size={15} /> Add University
+        </Button>
+      </div>
+
+      {/* Count + clear filters */}
+      <div className="flex items-center justify-between">
+        <p className="text-sm text-gray-500">
+          {filtered.length} of {universities.length} {universities.length === 1 ? "university" : "universities"}
+        </p>
+        {hasActiveFilters && (
+          <button
+            onClick={() => { setSearch(""); setFilterCountry(""); setFilterCourse(""); }}
+            className="text-xs text-blue-600 hover:underline flex items-center gap-1"
+          >
+            <X size={11} /> Clear filters
+          </button>
         )}
       </div>
 
@@ -248,70 +320,94 @@ function UniversitiesTab({
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
           {[1, 2, 3].map((i) => <div key={i} className="h-48 rounded-xl bg-gray-100 animate-pulse" />)}
         </div>
-      ) : universities.length === 0 ? (
+      ) : filtered.length === 0 ? (
         <div className="text-center py-16 text-gray-400">
           <GraduationCap size={40} className="mx-auto mb-3 opacity-30" />
-          <p className="font-medium">No universities yet</p>
-          {!isAdmin && <p className="text-sm mt-1">Add your first university to start building your reference list.</p>}
+          <p className="font-medium">{universities.length === 0 ? "No universities yet" : "No results match your filters"}</p>
+          {universities.length === 0 && <p className="text-sm mt-1">Add your first university to start building your reference list.</p>}
         </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
-          {universities.map((u) => (
-            <div key={u.id} className="bg-white rounded-xl border border-gray-200 p-5 flex flex-col gap-3 hover:shadow-sm transition-shadow">
-              <div className="flex items-start justify-between gap-2">
-                <div className="min-w-0">
-                  <h3 className="font-semibold text-gray-900 truncate">{u.name}</h3>
-                  {(u.country || u.city) && (
-                    <p className="text-sm text-gray-500 flex items-center gap-1 mt-0.5">
-                      <Globe size={12} />
-                      {[u.city, u.country].filter(Boolean).join(", ")}
-                    </p>
-                  )}
+        <div className="space-y-6">
+          {grouped.map(([country, items]) => (
+            <div key={country}>
+              {/* Country heading */}
+              <div className="flex items-center gap-3 mb-3">
+                <div className="flex items-center gap-2">
+                  <Globe size={14} className="text-blue-500" />
+                  <h2 className="text-sm font-semibold text-gray-700 uppercase tracking-wide">{country}</h2>
                 </div>
-                {!isAdmin && (
-                  <div className="flex gap-1 flex-shrink-0">
-                    <button onClick={() => openEdit(u)} className="p-1.5 rounded-lg text-gray-400 hover:text-blue-600 hover:bg-blue-50 transition-colors">
-                      <Pencil size={14} />
-                    </button>
-                    <button onClick={() => setDeleteTarget(u)} className="p-1.5 rounded-lg text-gray-400 hover:text-red-500 hover:bg-red-50 transition-colors">
-                      <Trash2 size={14} />
-                    </button>
-                  </div>
-                )}
+                <span className="text-xs text-gray-400 bg-gray-100 px-2 py-0.5 rounded-full">{items.length}</span>
+                <div className="flex-1 h-px bg-gray-200" />
               </div>
 
-              {(u.tuitionFeeMin || u.tuitionFeeMax) && (
-                <div className="flex items-center gap-1.5 text-sm text-emerald-700 bg-emerald-50 rounded-lg px-3 py-1.5">
-                  <DollarSign size={13} />
-                  <span className="font-medium">
-                    {u.tuitionFeeMin && u.tuitionFeeMax
-                      ? `${u.currency} ${u.tuitionFeeMin.toLocaleString()} – ${u.tuitionFeeMax.toLocaleString()}`
-                      : u.tuitionFeeMin
-                      ? `From ${u.currency} ${u.tuitionFeeMin.toLocaleString()}`
-                      : `Up to ${u.currency} ${u.tuitionFeeMax!.toLocaleString()}`}
-                  </span>
-                </div>
-              )}
+              <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+                {items.map((u) => (
+                  <div key={u.id} className="bg-white rounded-xl border border-gray-200 p-5 flex flex-col gap-3 hover:shadow-sm transition-shadow">
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="min-w-0">
+                        <h3 className="font-semibold text-gray-900 truncate">{u.name}</h3>
+                        {u.city && (
+                          <p className="text-sm text-gray-400 mt-0.5">{u.city}</p>
+                        )}
+                      </div>
+                      <div className="flex gap-1 flex-shrink-0">
+                        <button onClick={() => openEdit(u)} className="p-1.5 rounded-lg text-gray-400 hover:text-blue-600 hover:bg-blue-50 transition-colors">
+                          <Pencil size={14} />
+                        </button>
+                        <button onClick={() => setDeleteTarget(u)} className="p-1.5 rounded-lg text-gray-400 hover:text-red-500 hover:bg-red-50 transition-colors">
+                          <Trash2 size={14} />
+                        </button>
+                      </div>
+                    </div>
 
-              {u.courses.length > 0 && (
-                <div className="flex flex-wrap gap-1.5">
-                  {u.courses.map((c) => (
-                    <span key={c} className="text-xs bg-blue-50 text-blue-700 px-2 py-0.5 rounded-full border border-blue-100">{c}</span>
-                  ))}
-                </div>
-              )}
+                    {(u.tuitionFeeMin || u.tuitionFeeMax) && (
+                      <div className="flex items-center gap-1.5 text-sm text-emerald-700 bg-emerald-50 rounded-lg px-3 py-1.5">
+                        <DollarSign size={13} />
+                        <span className="font-medium">
+                          {u.tuitionFeeMin && u.tuitionFeeMax
+                            ? `${u.currency} ${u.tuitionFeeMin.toLocaleString()} – ${u.tuitionFeeMax.toLocaleString()}`
+                            : u.tuitionFeeMin
+                            ? `From ${u.currency} ${u.tuitionFeeMin.toLocaleString()}`
+                            : `Up to ${u.currency} ${u.tuitionFeeMax!.toLocaleString()}`}
+                        </span>
+                      </div>
+                    )}
 
-              {u.notes && (
-                <p className="text-sm text-gray-600 line-clamp-2 bg-gray-50 rounded-lg px-3 py-2">{u.notes}</p>
-              )}
+                    {u.courses.length > 0 && (
+                      <div className="flex flex-wrap gap-1.5">
+                        {u.courses.map((c) => (
+                          <span
+                            key={c}
+                            onClick={() => setFilterCourse(c === filterCourse ? "" : c)}
+                            className={`text-xs px-2 py-0.5 rounded-full border cursor-pointer transition-colors ${
+                              filterCourse === c
+                                ? "bg-blue-600 text-white border-blue-600"
+                                : "bg-blue-50 text-blue-700 border-blue-100 hover:bg-blue-100"
+                            }`}
+                          >
+                            {c}
+                          </span>
+                        ))}
+                      </div>
+                    )}
 
-              <div className="flex items-center justify-between mt-auto pt-1 border-t border-gray-100">
-                <span className="text-xs text-gray-400">{formatRelative(u.updatedAt)}</span>
-                {u.website && (
-                  <a href={u.website} target="_blank" rel="noopener noreferrer" className="text-xs text-blue-500 hover:underline flex items-center gap-1">
-                    Visit <ExternalLink size={10} />
-                  </a>
-                )}
+                    {u.notes && (
+                      <p className="text-sm text-gray-600 line-clamp-2 bg-gray-50 rounded-lg px-3 py-2">{u.notes}</p>
+                    )}
+
+                    <div className="flex items-center justify-between mt-auto pt-1 border-t border-gray-100">
+                      <div className="flex items-center gap-2">
+                        <span className="text-xs text-gray-400">{formatRelative(u.updatedAt)}</span>
+                        {isAdmin && <span className="text-xs text-gray-400">· {u.createdBy.name}</span>}
+                      </div>
+                      {u.website && (
+                        <a href={u.website} target="_blank" rel="noopener noreferrer" className="text-xs text-blue-500 hover:underline flex items-center gap-1">
+                          Visit <ExternalLink size={10} />
+                        </a>
+                      )}
+                    </div>
+                  </div>
+                ))}
               </div>
             </div>
           ))}
@@ -422,11 +518,9 @@ function UniversitiesTab({
       {/* Delete Confirmation */}
       <Dialog open={!!deleteTarget} onOpenChange={(open) => !open && setDeleteTarget(null)}>
         <DialogContent className="max-w-sm">
-          <DialogHeader>
-            <DialogTitle>Remove University</DialogTitle>
-          </DialogHeader>
+          <DialogHeader><DialogTitle>Remove University</DialogTitle></DialogHeader>
           <p className="text-sm text-gray-600 py-2">
-            Remove <span className="font-semibold">{deleteTarget?.name}</span> from your list?
+            Remove <span className="font-semibold">{deleteTarget?.name}</span> from the list?
           </p>
           <DialogFooter>
             <Button variant="outline" onClick={() => setDeleteTarget(null)}>Cancel</Button>
@@ -457,6 +551,8 @@ function NotesTab({
   const [editing, setEditing] = useState<CounsellorNote | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<CounsellorNote | null>(null);
   const [tagInput, setTagInput] = useState("");
+  const [search, setSearch] = useState("");
+  const [filterTag, setFilterTag] = useState("");
   const { toast } = useToast();
 
   const form = useForm<CreateCounsellorNoteInput>({
@@ -465,6 +561,21 @@ function NotesTab({
   });
 
   const tags = form.watch("tags") ?? [];
+
+  const allTags = useMemo(() => {
+    const set = new Set(notes.flatMap((n) => n.tags));
+    return Array.from(set).sort();
+  }, [notes]);
+
+  const filtered = useMemo(() => {
+    return notes.filter((n) => {
+      const matchSearch = !search || n.title.toLowerCase().includes(search.toLowerCase()) || n.content.toLowerCase().includes(search.toLowerCase());
+      const matchTag = !filterTag || n.tags.includes(filterTag);
+      return matchSearch && matchTag;
+    });
+  }, [notes, search, filterTag]);
+
+  const hasActiveFilters = search || filterTag;
 
   function openAdd() {
     setEditing(null);
@@ -517,16 +628,50 @@ function NotesTab({
     onMutate();
   }
 
-  const tagColors = ["bg-purple-50 text-purple-700 border-purple-100", "bg-orange-50 text-orange-700 border-orange-100", "bg-teal-50 text-teal-700 border-teal-100", "bg-pink-50 text-pink-700 border-pink-100"];
+  const tagColors = [
+    "bg-purple-50 text-purple-700 border-purple-100",
+    "bg-orange-50 text-orange-700 border-orange-100",
+    "bg-teal-50 text-teal-700 border-teal-100",
+    "bg-pink-50 text-pink-700 border-pink-100",
+  ];
 
   return (
     <>
-      <div className="flex justify-between items-center">
-        <p className="text-sm text-gray-500">{notes.length} {notes.length === 1 ? "note" : "notes"}</p>
-        {!isAdmin && (
-          <Button onClick={openAdd} size="sm" className="gap-2">
-            <Plus size={15} /> Add Note
-          </Button>
+      {/* Toolbar */}
+      <div className="flex flex-col sm:flex-row gap-3">
+        <div className="relative flex-1">
+          <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+          <Input
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder="Search notes..."
+            className="pl-9"
+          />
+        </div>
+        <select
+          value={filterTag}
+          onChange={(e) => setFilterTag(e.target.value)}
+          className="text-sm border border-gray-200 rounded-lg px-3 py-2 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 min-w-[150px]"
+        >
+          <option value="">All Tags</option>
+          {allTags.map((t) => <option key={t} value={t}>#{t}</option>)}
+        </select>
+        <Button onClick={openAdd} size="sm" className="gap-2 shrink-0">
+          <Plus size={15} /> Add Note
+        </Button>
+      </div>
+
+      <div className="flex items-center justify-between">
+        <p className="text-sm text-gray-500">
+          {filtered.length} of {notes.length} {notes.length === 1 ? "note" : "notes"}
+        </p>
+        {hasActiveFilters && (
+          <button
+            onClick={() => { setSearch(""); setFilterTag(""); }}
+            className="text-xs text-blue-600 hover:underline flex items-center gap-1"
+          >
+            <X size={11} /> Clear filters
+          </button>
         )}
       </div>
 
@@ -534,28 +679,26 @@ function NotesTab({
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
           {[1, 2, 3].map((i) => <div key={i} className="h-40 rounded-xl bg-gray-100 animate-pulse" />)}
         </div>
-      ) : notes.length === 0 ? (
+      ) : filtered.length === 0 ? (
         <div className="text-center py-16 text-gray-400">
           <StickyNote size={40} className="mx-auto mb-3 opacity-30" />
-          <p className="font-medium">No notes yet</p>
-          {!isAdmin && <p className="text-sm mt-1">Jot down important information, strategies, or reminders.</p>}
+          <p className="font-medium">{notes.length === 0 ? "No notes yet" : "No results match your filters"}</p>
+          {notes.length === 0 && <p className="text-sm mt-1">Jot down important information, strategies, or reminders.</p>}
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
-          {notes.map((n, idx) => (
+          {filtered.map((n) => (
             <div key={n.id} className="bg-white rounded-xl border border-gray-200 p-5 flex flex-col gap-3 hover:shadow-sm transition-shadow">
               <div className="flex items-start justify-between gap-2">
                 <h3 className="font-semibold text-gray-900 leading-tight">{n.title}</h3>
-                {!isAdmin && (
-                  <div className="flex gap-1 flex-shrink-0">
-                    <button onClick={() => openEdit(n)} className="p-1.5 rounded-lg text-gray-400 hover:text-blue-600 hover:bg-blue-50 transition-colors">
-                      <Pencil size={14} />
-                    </button>
-                    <button onClick={() => setDeleteTarget(n)} className="p-1.5 rounded-lg text-gray-400 hover:text-red-500 hover:bg-red-50 transition-colors">
-                      <Trash2 size={14} />
-                    </button>
-                  </div>
-                )}
+                <div className="flex gap-1 flex-shrink-0">
+                  <button onClick={() => openEdit(n)} className="p-1.5 rounded-lg text-gray-400 hover:text-blue-600 hover:bg-blue-50 transition-colors">
+                    <Pencil size={14} />
+                  </button>
+                  <button onClick={() => setDeleteTarget(n)} className="p-1.5 rounded-lg text-gray-400 hover:text-red-500 hover:bg-red-50 transition-colors">
+                    <Trash2 size={14} />
+                  </button>
+                </div>
               </div>
 
               <p className="text-sm text-gray-600 line-clamp-4 flex-1 whitespace-pre-wrap">{n.content}</p>
@@ -563,7 +706,15 @@ function NotesTab({
               {n.tags.length > 0 && (
                 <div className="flex flex-wrap gap-1.5">
                   {n.tags.map((t, ti) => (
-                    <span key={t} className={`text-xs px-2 py-0.5 rounded-full border ${tagColors[ti % tagColors.length]}`}>
+                    <span
+                      key={t}
+                      onClick={() => setFilterTag(t === filterTag ? "" : t)}
+                      className={`text-xs px-2 py-0.5 rounded-full border cursor-pointer transition-colors ${
+                        filterTag === t
+                          ? "bg-purple-600 text-white border-purple-600"
+                          : tagColors[ti % tagColors.length]
+                      }`}
+                    >
                       #{t}
                     </span>
                   ))}
@@ -641,9 +792,7 @@ function NotesTab({
       {/* Delete Confirmation */}
       <Dialog open={!!deleteTarget} onOpenChange={(open) => !open && setDeleteTarget(null)}>
         <DialogContent className="max-w-sm">
-          <DialogHeader>
-            <DialogTitle>Delete Note</DialogTitle>
-          </DialogHeader>
+          <DialogHeader><DialogTitle>Delete Note</DialogTitle></DialogHeader>
           <p className="text-sm text-gray-600 py-2">
             Delete <span className="font-semibold">{deleteTarget?.title}</span>? This cannot be undone.
           </p>
