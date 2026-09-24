@@ -9,7 +9,7 @@ export default function TeacherNewLeadPage() {
         <p className="text-sm text-gray-500 mt-0.5">Capture a new class or booking lead</p>
       </div>
       <Suspense>
-        <QuickLeadForm allowedTypes={["IELTS_CLASS", "PTE_CLASS", "DATE_BOOKING"]} />
+        <QuickLeadForm allowedTypes={["STUDY_ABROAD", "IELTS_CLASS", "PTE_CLASS", "DATE_BOOKING"]} />
       </Suspense>
     </div>
   );
