@@ -20,6 +20,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "
 import StatusBadge from "@/components/leads/StatusBadge";
 import FeeSection from "@/components/leads/FeeSection";
 import TasksSection from "@/components/leads/TasksSection";
+import DocumentsSection from "@/components/leads/DocumentsSection";
 import { formatDate, formatDateTime, formatRelative, STATUS_LABELS, LEAD_TYPE_LABELS, LEAD_TYPE_COLORS, STATUSES_BY_TYPE, EDUCATION_LEVELS } from "@/lib/utils";
 import { cn } from "@/lib/utils";
 import { useToast } from "@/components/ui/use-toast";
@@ -321,6 +322,9 @@ export default function LeadDetailClient({ id }: { id: string }) {
 
           {/* Tasks */}
           <TasksSection leadId={lead.id} myUserId={meData?.user?.id ?? ""} myRole={myRole} />
+
+          {/* Documents */}
+          <DocumentsSection leadId={lead.id} myRole={myRole} />
 
           {/* Activity Timeline */}
           <div className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">

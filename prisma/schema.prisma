@@ -166,6 +166,7 @@ model User {
   attendance     Attendance[]   @relation("AttendanceMarkedBy")
   assignedTasks  LeadTask[]     @relation("AssignedTasks")
   createdTasks   LeadTask[]     @relation("CreatedTasks")
+  uploadedDocs   LeadDocument[] @relation("UploadedDocuments")
 }
 
 model LeadSource {
@@ -254,6 +255,7 @@ model Lead {
   feeRecord   FeeRecord?
   attendance  Attendance[]
   tasks       LeadTask[]
+  documents   LeadDocument[]
 
   @@index([phone])
   @@index([leadId])
@@ -394,4 +396,19 @@ model LeadTask {
   @@index([assignedToId])
   @@index([createdById])
   @@index([status])
+}
+
+model LeadDocument {
+  id           String   @id @default(cuid())
+  leadId       String
+  lead         Lead     @relation(fields: [leadId], references: [id], onDelete: Cascade)
+  name         String
+  key          String
+  size         Int
+  docType      String
+  uploadedById String
+  uploadedBy   User     @relation("UploadedDocuments", fields: [uploadedById], references: [id])
+  createdAt    DateTime @default(now())
+
+  @@index([leadId])
 }
