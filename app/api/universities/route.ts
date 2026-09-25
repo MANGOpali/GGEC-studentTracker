@@ -17,9 +17,9 @@ export async function GET(request: NextRequest) {
   const counsellorId = searchParams.get("counsellorId");
 
   const where =
-    session.role === "ADMIN"
-      ? counsellorId ? { createdById: counsellorId, isActive: true } : { isActive: true }
-      : { createdById: session.userId, isActive: true };
+    session.role === "ADMIN" && counsellorId
+      ? { createdById: counsellorId, isActive: true }
+      : { isActive: true };
 
   const universities = await prisma.university.findMany({
     where,
