@@ -5,6 +5,7 @@ import { prisma } from "@/lib/db";
 import { createLeadSchema } from "@/lib/validations";
 import { createLead, checkDuplicate } from "@/services/leadService";
 import { buildLeadWhereClause } from "@/lib/permissions";
+import { normalizePhone } from "@/lib/utils";
 import { Prisma } from "@prisma/client";
 
 async function getSession(req: NextRequest) {
@@ -34,7 +35,7 @@ export async function GET(request: NextRequest) {
 
   // Duplicate check shortcut
   if (phone) {
-    const duplicates = await checkDuplicate(phone);
+    const duplicates = await checkDuplicate(normalizePhone(phone));
     return NextResponse.json({ duplicates, duplicate: duplicates[0] ?? null });
   }
 

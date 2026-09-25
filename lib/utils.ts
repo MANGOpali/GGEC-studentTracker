@@ -30,6 +30,13 @@ export function formatPhone(phone: string): string {
   return phone.replace(/(\d{4})(\d{3})(\d{3})/, "$1-$2-$3");
 }
 
+// Strips formatting and country code prefix, returns last 10 digits.
+// +977-9841234567, 009779841234567, 9841-234-567 all → "9841234567"
+export function normalizePhone(phone: string): string {
+  const digits = phone.replace(/\D/g, "");
+  return digits.length > 10 ? digits.slice(-10) : digits;
+}
+
 export const EDUCATION_LEVELS = [
   "+2/High School",
   "Bachelor's",

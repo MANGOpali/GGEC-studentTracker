@@ -1,5 +1,5 @@
 import { prisma } from "@/lib/db";
-import { generateLeadId } from "@/lib/utils";
+import { generateLeadId, normalizePhone } from "@/lib/utils";
 import { appendLeadToSheet, ensureSheetHeaders } from "@/lib/google-sheets";
 import { CreateLeadInput } from "@/lib/validations";
 import { LeadStatus, LeadType } from "@prisma/client";
@@ -21,10 +21,10 @@ export async function getNextLeadSequence(): Promise<number> {
 }
 
 export async function checkDuplicate(phone: string, excludeId?: string) {
-  const normalized = phone.replace(/\s/g, "");
+  const normalized = normalizePhone(phone);
   const leads = await prisma.lead.findMany({
     where: {
-      phone: { contains: normalized },
+      phoneNormalized: normalized,
       isArchived: false,
       ...(excludeId ? { id: { not: excludeId } } : {}),
     },
@@ -48,6 +48,7 @@ export async function createLead(data: CreateLeadInput, createdById: string, tea
       leadType: (data.leadType as LeadType) || LeadType.STUDY_ABROAD,
       studentName: data.studentName,
       phone: data.phone,
+      phoneNormalized: normalizePhone(data.phone),
       email: data.email || null,
       educationLevel: data.educationLevel,
       countryId: data.countryId || null,

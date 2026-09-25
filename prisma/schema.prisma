@@ -209,6 +209,7 @@ model Lead {
   leadId               String     @unique
   studentName          String
   phone                String
+  phoneNormalized      String?
   email                String?
   educationLevel       String
   leadType             LeadType   @default(STUDY_ABROAD)
@@ -260,6 +261,7 @@ model Lead {
   documents   LeadDocument[]
 
   @@index([phone])
+  @@index([phoneNormalized])
   @@index([leadId])
   @@index([studentName])
   @@index([countryId])

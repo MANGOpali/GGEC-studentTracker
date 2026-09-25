@@ -15,8 +15,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { ChevronDown, ChevronUp, Loader2, CheckCircle, AlertTriangle, Globe, BookOpen, Calendar, BookMarked, ExternalLink, Plus } from "lucide-react";
 import Link from "next/link";
-import { cn } from "@/lib/utils";
-import { EDUCATION_LEVELS, LEAD_TYPE_LABELS } from "@/lib/utils";
+import { cn, normalizePhone, EDUCATION_LEVELS, LEAD_TYPE_LABELS } from "@/lib/utils";
 
 interface RefData {
   sources: Array<{ id: string; name: string }>;
@@ -105,9 +104,10 @@ export default function QuickLeadForm({ allowedTypes }: { allowedTypes?: string[
   }, [searchParams, refData, setValue]);
 
   async function checkDuplicatePhone(phoneVal: string) {
-    if (!phoneVal || phoneVal.length < 7) return;
+    const norm = normalizePhone(phoneVal);
+    if (!norm || norm.length < 7) return;
     try {
-      const res = await fetch(`/api/leads?phone=${encodeURIComponent(phoneVal)}`);
+      const res = await fetch(`/api/leads?phone=${encodeURIComponent(norm)}`);
       if (res.ok) {
         const data = await res.json();
         setDuplicates(data.duplicates ?? (data.duplicate ? [data.duplicate] : []));

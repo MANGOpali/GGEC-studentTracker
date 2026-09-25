@@ -5,6 +5,7 @@ import { prisma } from "@/lib/db";
 import { updateLeadSchema } from "@/lib/validations";
 import { canEditLead } from "@/lib/permissions";
 import { createNotification, notifyAdmins } from "@/services/notificationService";
+import { normalizePhone } from "@/lib/utils";
 
 const MILESTONE_STATUSES = new Set(["ENROLLED", "VISA_GRANTED", "APPLICATION_SUBMITTED", "OFFER_RECEIVED", "COMPLETED", "CONFIRMED"]);
 
@@ -128,6 +129,7 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
     if (restFields.shiftId === "") updateData.shiftId = null;
     if (restFields.classType === "") updateData.classType = null;
     if (restFields.studentStatus === "") updateData.studentStatus = null;
+    if (restFields.phone) updateData.phoneNormalized = normalizePhone(restFields.phone);
 
     const updated = await prisma.lead.update({ where: { id: existing.id }, data: updateData });
 
