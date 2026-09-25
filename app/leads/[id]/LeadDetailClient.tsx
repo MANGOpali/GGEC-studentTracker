@@ -248,8 +248,8 @@ export default function LeadDetailClient({ id }: { id: string }) {
       {/* Header */}
       <div className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
         <div className={cn("h-0.5", typeConfig.bar)} />
-        <div className="px-5 py-4 flex items-center justify-between gap-3">
-          <div className="flex items-center gap-3 min-w-0">
+        <div className="px-4 sm:px-5 py-4 flex flex-wrap items-start gap-3">
+          <div className="flex items-center gap-3 min-w-0 flex-1">
             <button onClick={() => router.back()} className="w-7 h-7 rounded-lg border border-gray-200 flex items-center justify-center text-gray-400 hover:text-gray-600 hover:bg-gray-50 transition-colors flex-shrink-0">
               <ArrowLeft size={14} />
             </button>
@@ -267,7 +267,7 @@ export default function LeadDetailClient({ id }: { id: string }) {
               <div className="flex items-center gap-2.5 mt-0.5 flex-wrap">
                 <span className="font-mono text-[11px] font-semibold text-blue-600 bg-blue-50 px-1.5 py-0.5 rounded">{lead.leadId}</span>
                 <span className="text-xs text-gray-400">{lead.phone}</span>
-                {lead.email && <span className="text-xs text-gray-400">{lead.email}</span>}
+                {lead.email && <span className="text-xs text-gray-400 hidden sm:inline">{lead.email}</span>}
               </div>
             </div>
           </div>
@@ -280,10 +280,10 @@ export default function LeadDetailClient({ id }: { id: string }) {
               <Plus size={14} />
             </button>
             <Button variant="outline" size="sm" onClick={openEdit} className="gap-1.5 h-8 text-xs px-3">
-              <Pencil size={12} />Edit
+              <Pencil size={12} /><span className="hidden xs:inline">Edit</span>
             </Button>
             <Button size="sm" onClick={() => { setNewStatus(lead.status); setShowStatusDialog(true); }} className="gap-1.5 h-8 text-xs px-3">
-              <Zap size={12} />Status
+              <Zap size={12} /><span className="hidden xs:inline">Status</span>
             </Button>
           </div>
         </div>
