@@ -9,6 +9,10 @@ async function getSession(req: NextRequest) {
   return getIronSession<SessionData>(req, res, sessionOptions);
 }
 
+const courseInclude = {
+  orderBy: [{ courseLevel: "asc" as const }, { courseName: "asc" as const }],
+};
+
 export async function GET(request: NextRequest) {
   const session = await getSession(request);
   if (!session.userId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -23,7 +27,10 @@ export async function GET(request: NextRequest) {
 
   const universities = await prisma.university.findMany({
     where,
-    include: { createdBy: { select: { id: true, name: true } } },
+    include: {
+      createdBy: { select: { id: true, name: true } },
+      universityCourses: courseInclude,
+    },
     orderBy: { createdAt: "desc" },
   });
 
@@ -41,14 +48,29 @@ export async function POST(request: NextRequest) {
   const parsed = createUniversitySchema.safeParse(body);
   if (!parsed.success) return NextResponse.json({ error: "Invalid input", details: parsed.error.flatten() }, { status: 400 });
 
+  const { courses, ...uniData } = parsed.data;
+
   const university = await prisma.university.create({
     data: {
-      ...parsed.data,
-      tuitionFeeMin: parsed.data.tuitionFeeMin ?? null,
-      tuitionFeeMax: parsed.data.tuitionFeeMax ?? null,
+      ...uniData,
+      tuitionFeeMin: uniData.tuitionFeeMin ?? null,
+      tuitionFeeMax: uniData.tuitionFeeMax ?? null,
       createdById: session.userId,
+      ...(courses.length > 0 && {
+        universityCourses: {
+          create: courses.map((c) => ({
+            courseName: c.courseName,
+            courseLevel: c.courseLevel,
+            intakeName: c.intakeName || null,
+            campusLocation: c.campusLocation || null,
+          })),
+        },
+      }),
     },
-    include: { createdBy: { select: { id: true, name: true } } },
+    include: {
+      createdBy: { select: { id: true, name: true } },
+      universityCourses: courseInclude,
+    },
   });
 
   return NextResponse.json({ university }, { status: 201 });

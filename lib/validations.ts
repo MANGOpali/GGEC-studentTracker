@@ -90,6 +90,13 @@ export const createUserSchema = z.object({
   branchId: z.string().optional(),
 });
 
+export const universityCourseInputSchema = z.object({
+  courseName: z.string().min(1, "Course name is required"),
+  courseLevel: z.string().min(1, "Level is required"),
+  intakeName: z.string().optional().or(z.literal("")),
+  campusLocation: z.string().optional().or(z.literal("")),
+});
+
 export const createUniversitySchema = z.object({
   name: z.string().min(2, "University name is required").max(200),
   country: z.string().optional().or(z.literal("")),
@@ -97,9 +104,16 @@ export const createUniversitySchema = z.object({
   tuitionFeeMin: z.number().min(0).optional().nullable(),
   tuitionFeeMax: z.number().min(0).optional().nullable(),
   currency: z.string().default("USD"),
-  courses: z.array(z.string()).default([]),
   notes: z.string().max(2000).optional().or(z.literal("")),
   website: z.string().url("Invalid URL").optional().or(z.literal("")),
+  flyer: z.string().url("Invalid URL").optional().or(z.literal("")),
+  academicCriteriaUG: z.string().optional().or(z.literal("")),
+  academicCriteriaPG: z.string().optional().or(z.literal("")),
+  englishCriteriaUG: z.string().optional().or(z.literal("")),
+  englishCriteriaPG: z.string().optional().or(z.literal("")),
+  englishWaiverUG: z.string().optional().or(z.literal("")),
+  englishWaiverPG: z.string().optional().or(z.literal("")),
+  courses: z.array(universityCourseInputSchema).default([]),
 });
 
 export const updateUniversitySchema = createUniversitySchema.partial();

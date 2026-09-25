@@ -416,24 +416,46 @@ model LeadDocument {
 }
 
 model University {
-  id            String   @id @default(cuid())
-  name          String
-  country       String?
-  city          String?
-  tuitionFeeMin Float?
-  tuitionFeeMax Float?
-  currency      String   @default("USD")
-  courses       String[]
-  notes         String?
-  website       String?
-  createdById   String
-  createdBy     User     @relation(fields: [createdById], references: [id])
-  isActive      Boolean  @default(true)
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
+  id                  String   @id @default(cuid())
+  name                String
+  country             String?
+  city                String?
+  tuitionFeeMin       Float?
+  tuitionFeeMax       Float?
+  currency            String   @default("USD")
+  notes               String?
+  website             String?
+  flyer               String?
+  academicCriteriaUG  String?
+  academicCriteriaPG  String?
+  englishCriteriaUG   String?
+  englishCriteriaPG   String?
+  englishWaiverUG     String?
+  englishWaiverPG     String?
+  createdById         String
+  createdBy           User     @relation(fields: [createdById], references: [id])
+  isActive            Boolean  @default(true)
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+
+  universityCourses   UniversityCourse[]
 
   @@index([createdById])
   @@index([country])
+}
+
+model UniversityCourse {
+  id             String     @id @default(cuid())
+  universityId   String
+  university     University @relation(fields: [universityId], references: [id], onDelete: Cascade)
+  courseName     String
+  courseLevel    String
+  intakeName     String?
+  campusLocation String?
+  createdAt      DateTime   @default(now())
+
+  @@index([universityId])
+  @@index([courseLevel])
 }
 
 model CounsellorNote {
