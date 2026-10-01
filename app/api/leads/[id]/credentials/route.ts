@@ -2,7 +2,6 @@ import { NextRequest, NextResponse } from "next/server";
 import { getIronSession } from "iron-session";
 import { SessionData, sessionOptions } from "@/lib/session";
 import { prisma } from "@/lib/db";
-import { canViewLead } from "@/lib/permissions";
 
 async function getSession(req: NextRequest) {
   const res = NextResponse.next();
@@ -16,7 +15,6 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
   const { id } = await params;
   const lead = await prisma.lead.findFirst({ where: { OR: [{ id }, { leadId: id }] } });
   if (!lead) return NextResponse.json({ error: "Not found" }, { status: 404 });
-  if (!canViewLead(session, lead)) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
 
   const credentials = await prisma.studentCredential.findMany({
     where: { leadId: lead.id },
@@ -35,7 +33,6 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
   const { id } = await params;
   const lead = await prisma.lead.findFirst({ where: { OR: [{ id }, { leadId: id }] } });
   if (!lead) return NextResponse.json({ error: "Not found" }, { status: 404 });
-  if (!canViewLead(session, lead)) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
 
   const { label, username, password, notes } = await request.json();
   if (!label?.trim() || !password?.trim()) {
