@@ -21,6 +21,7 @@ import StatusBadge from "@/components/leads/StatusBadge";
 import FeeSection from "@/components/leads/FeeSection";
 import TasksSection from "@/components/leads/TasksSection";
 import DocumentsSection from "@/components/leads/DocumentsSection";
+import CredentialsSection from "@/components/leads/CredentialsSection";
 import { formatDate, formatDateTime, formatRelative, STATUS_LABELS, LEAD_TYPE_LABELS, LEAD_TYPE_COLORS, STATUSES_BY_TYPE, EDUCATION_LEVELS } from "@/lib/utils";
 import { cn } from "@/lib/utils";
 import { useToast } from "@/components/ui/use-toast";
@@ -325,6 +326,9 @@ export default function LeadDetailClient({ id }: { id: string }) {
 
           {/* Documents */}
           <DocumentsSection leadId={lead.id} myRole={myRole} />
+
+          {/* Portal Credentials */}
+          <CredentialsSection leadId={lead.id} myRole={myRole} />
 
           {/* Activity Timeline */}
           <div className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
