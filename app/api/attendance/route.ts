@@ -31,7 +31,7 @@ export async function GET(request: NextRequest) {
         isArchived: false,
         teacherId: { not: null },
         leadType: { in: ["IELTS_CLASS", "PTE_CLASS"] },
-        studentStatus: { notIn: ["COMPLETE", "DROPPED"] },
+        OR: [{ studentStatus: null }, { studentStatus: { notIn: ["COMPLETE", "DROPPED"] } }],
       },
       select: { id: true, leadId: true, studentName: true, studentStatus: true, classType: true },
       orderBy: { studentName: "asc" },
